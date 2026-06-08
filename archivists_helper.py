@@ -1,10 +1,11 @@
+import os
+import shutil
+import pathlib
+from datetime import datetime
 import csv
 import json
-import os
 from hashlib import sha256
-import pathlib
 import bagit
-from datetime import datetime
 
 
 # CHANGELOG
@@ -188,9 +189,26 @@ class ProjectInitiator:
         print("Directory initialised.")
 
 
-# CREATE DATA OBJECT
+# CREATE DATA SOURCE
+class data_source:
+    """Create data source object"""
+    def __init__(self, source_path:str):
+        self.source_path = source_path
+
+    @property
+    def source_path(self):
+        """The source_path property."""
+        return self._source_path
+
+    @source_path.setter
+    def source_path(self, value):
+        if not os.path.exists(value):
+            raise FileNotFoundError(f'{value} does not exist.')
+        self._source_path = value
 
 # INGESTION
+class data_ingester:
+    def __init__(self, data_source)
 
 # FILE VALIDATION
 
