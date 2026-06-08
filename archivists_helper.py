@@ -16,6 +16,18 @@ class LogWriter:
         self.log_file = self.project_name + "_changelog.csv"
         self.dt_format = dt_format
 
+    def _fail_if_file_exists(self, file_path, name, action) -> bool:
+        if os.path.isfile(file_path):
+            self._write_csv(
+                action,
+                os.path.abspath(file_path),
+                os.path.abspath(file_path),
+                self._calculate_sha256(os.path.abspath(file_path)),
+                f"ACTION FAILED: {name} already exists.",
+            )
+            return False
+        return True
+
     def _calculate_sha256(self, file_path):
         if not os.path.exists(file_path):
             return f"FILE_MISSING: {file_path}"
@@ -25,8 +37,12 @@ class LogWriter:
             return sha256().hexdigest()
 
     # Create and write to CSV
-
     def _create_csv(self):
+        if not self._fail_if_file_exists(
+            self.log_file, "changelog", "CREATE_CHANGELOG"
+        ):
+            return
+
         with open(self.log_file, mode="a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(
@@ -37,6 +53,7 @@ class LogWriter:
                     "file_path_after",
                     "hash_before",
                     "hash_after",
+                    "note",
                 ]
             )
             f.flush()
@@ -49,6 +66,7 @@ class LogWriter:
                     os.path.abspath(self.log_file),
                     "N/A",
                     self._calculate_sha256(os.path.abspath(self.log_file)),
+                    "",
                 ]
             )
             f.flush()
@@ -59,16 +77,18 @@ class LogWriter:
         path_before: str,
         path_after: str,
         hash_before: str = "N/A",
-    ):
-        file_exists = os.path.isfile(self.log_file)
+        note: str = "",
+    ) -> None:
+        csv_exists = os.path.isfile(self.log_file)
+        if not csv_exists:
+            self._create_csv()
 
         with open(self.log_file, mode="a", newline="") as f:
             writer = csv.writer(f)
-            if not file_exists:
-                self._create_csv()
 
             permitted_actions = [
                 "CREATE_CHANGELOG",
+                "CREATE_DUBLIN_CORE_JSON",
                 "INGEST_FILE",
                 "COMPUTE_CHECKSUM",
                 "EXTRACT_METADATA",
@@ -78,8 +98,10 @@ class LogWriter:
                 "MOVE",
                 "CREATE_BAG",
                 "VALIDATE_BAG",
+                "ERROR",
             ]
             if action_type not in permitted_actions:
+                note = f"{action_type} is not a valid action type."
                 action_type = "ERROR"
 
             writer.writerow(
@@ -90,6 +112,7 @@ class LogWriter:
                     path_after,
                     hash_before,
                     self._calculate_sha256(path_after),
+                    note,
                 ]
             )
             f.flush()
@@ -97,17 +120,22 @@ class LogWriter:
 
 # ERROR REPORTING
 
+
 # Project Initiation
-
-
 class ProjectInitiator:
     def __init__(
         self, project_name: str = "ProjectName", start_date: str = "YYYYmmdd"
     ) -> None:
         self.project_name = project_name
         self.start_date = start_date
+        self.metadata_json = f"{self.project_name}_metadata.json"
 
-    def _create_dublin_core_json(self):
+    def _create_dublin_core_json(self) -> None:
+        if not LogWriter(self.project_name)._fail_if_file_exists(
+            f"{self.metadata_json}", "metadata JSON", "CREATE_DUBLIN_CORE_JSON"
+        ):
+            return
+
         dc_dict = dict(
             contributors=[
                 "An entity responsible for making contributions to the resource."
@@ -147,9 +175,17 @@ class ProjectInitiator:
         with open(f"{self.project_name}_metadata.json", "w") as f:
             json.dump(dc_dict, f, sort_keys=False, indent=4, ensure_ascii=False)
 
-    def init_folder(self):
+        LogWriter(self.project_name)._write_csv(
+            "CREATE_DUBLIN_CORE_JSON",
+            "N/A",
+            os.path.abspath(self.metadata_json),
+            "N/A",
+        )
+
+    def init_directory(self):
         LogWriter(self.project_name)._create_csv()
         self._create_dublin_core_json()
+        print("Directory initialised.")
 
 
 # CREATE DATA OBJECT
@@ -169,6 +205,5 @@ class ProjectInitiator:
 # CLEANUP AND REPORT
 #
 
-
 if __name__ == "__main__":
-    ProjectInitiator("Test", "20260608").init_folder()
+    ProjectInitiator("Test", "20260608").init_directory()
