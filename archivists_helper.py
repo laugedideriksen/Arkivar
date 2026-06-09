@@ -1,4 +1,5 @@
 import os
+import subprocess
 import shutil
 import pathlib
 from datetime import datetime
@@ -190,8 +191,8 @@ class ProjectInitiator:
 
 
 # CREATE DATA SOURCE
-class data_source:
-    """Create data source object"""
+class DataSource:
+    """Create data source object."""
     def __init__(self, source_path:str):
         self.source_path = source_path
 
@@ -204,11 +205,56 @@ class data_source:
     def source_path(self, value):
         if not os.path.exists(value):
             raise FileNotFoundError(f'{value} does not exist.')
-        self._source_path = value
+        elif os.path.isfile(value):
+            self.source_type = "file"
+        elif os.path.isdir(value):
+            self.source_type = 'directory'
+        self._source_path = os.path.abspath(value)
 
 # INGESTION
-class data_ingester:
-    def __init__(self, data_source)
+class DataIngester:
+    """This class takes a data source object as its input, and ingests all data from there using rsync."""
+    def __init__(self, data_source):
+        self.data_source = data_source
+        self.path = self.data_source.source_path
+        self.type = self.data_source.source_type
+
+    @property
+    def data_source(self):
+        """The data_source property."""
+        return self._data_source
+
+    @data_source.setter
+    def data_source(self, value):
+        if not isinstance(value, DataSource):
+            raise ValueError('data_source must be of type DataSource.')
+        self._data_source = value
+
+    @property
+    def source_path(self):
+        """The source_path property."""
+        return self._source_path
+
+    @source_path.setter
+    def source_path(self, value):
+        self._source_path = value
+
+    def _ingest_file(self, ingest_function):
+        pass
+
+    def _ingest_directory(self, ingest_function):
+        pass
+
+    def ingest(self, dry_run: bool = False):
+        if dry_run:
+            ingest_function = None
+        else:
+            ingest_function = None
+
+        if self.type == 'file':
+            self._ingest_file(ingest_function)
+        elif self.type == 'directory':
+            self._ingest_directory(ingest_function)
 
 # FILE VALIDATION
 
@@ -224,4 +270,5 @@ class data_ingester:
 #
 
 if __name__ == "__main__":
-    ProjectInitiator("Test", "20260608").init_directory()
+    #ProjectInitiator("Test", "20260608").init_directory()
+    print(DataIngester(DataSource('cli.py')).path)
