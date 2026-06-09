@@ -187,6 +187,10 @@ class ProjectInitiator:
     def init_directory(self):
         LogWriter(self.project_name)._create_csv()
         self._create_dublin_core_json()
+        if not os.path.isdir('staging'):
+            os.mkdir('staging')
+        if not os.path.isdir('quarantine'):
+            os.mkdir('quarantine')
         print("Directory initialised.")
 
 
@@ -240,16 +244,18 @@ class DataIngester:
         self._source_path = value
 
     def _ingest_file(self, ingest_function):
+        res = subprocess.run(ingest_function, capture_output=True)
         pass
 
     def _ingest_directory(self, ingest_function):
+        #TODO: walk tree and call ingest file on every single file.
         pass
 
     def ingest(self, dry_run: bool = False):
         if dry_run:
-            ingest_function = None
+            ingest_function = ['rsync','-cain', self.path, 'staging']
         else:
-            ingest_function = None
+            ingest_function = ['rsync','-cai', self.path, 'staging']
 
         if self.type == 'file':
             self._ingest_file(ingest_function)
@@ -270,5 +276,5 @@ class DataIngester:
 #
 
 if __name__ == "__main__":
-    #ProjectInitiator("Test", "20260608").init_directory()
-    print(DataIngester(DataSource('cli.py')).path)
+    ProjectInitiator("Test", "20260608").init_directory()
+    #print(DataIngester(DataSource('cli.py')).path)
