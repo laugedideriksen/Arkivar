@@ -11,6 +11,7 @@ from hashlib import sha256
 import puremagic
 import bagit
 
+
 @dataclass(frozen=True)
 class FileState:
     source_path: str
@@ -19,18 +20,29 @@ class FileState:
     base_name: str
     status: str = "NEW"
 
+
 # CHANGELOG
 class LogWriter:
-    def __init__(self, log_file: str = "changelog.csv", dt_format: str = "%Y%m%d-%H:%M:%S.%f") -> None:
+    def __init__(
+        self, log_file: str = "changelog.csv", dt_format: str = "%Y%m%d-%H:%M:%S.%f"
+    ) -> None:
         self.log_file = log_file
         self.dt_format = dt_format
         self._ensure_init()
 
     def _ensure_init(self):
-        if not os.path.isdir("staging") and not os.path.isdir("quarantine") and not os.path.isfile("changelog.csv") and not os.path.isfile("metadata.json"):
-            raise Exception(f"{os.getcwd()} doesn't seem to be initialised. Please run init command.")
+        if (
+            not os.path.isdir("staging")
+            and not os.path.isdir("quarantine")
+            and not os.path.isfile("changelog.csv")
+            and not os.path.isfile("metadata.json")
+        ):
+            raise Exception(
+                f"{os.getcwd()} doesn't seem to be initialised. Please run init command."
+            )
 
     def _fail_if_file_exists(self, file_path, name, action) -> bool:
+        # TODO: this might want to go to a utility class.
         if os.path.isfile(file_path):
             self._write_csv(
                 action,
@@ -42,7 +54,7 @@ class LogWriter:
             return False
         return True
 
-    def _calculate_sha256(self, file_path: str)->str:
+    def _calculate_sha256(self, file_path: str) -> str:
         if not os.path.exists(file_path):
             return f"FILE_MISSING: {file_path}"
         with open(file_path, "rb") as f:
@@ -50,8 +62,71 @@ class LogWriter:
                 sha256().update(byte_block)
             return sha256().hexdigest()
 
+    def change_state(
+        self, state: "FileState", action: str, path_after_action: str, note: str = ""
+    ) -> "FileState":
+        timestamp = datetime.now().strftime(self.dt_format)
+        path_before_action = state.current_path
+        hash_before_action = state.current_hash or "N/A"
+        hash_after_action = self._calculate_sha256(path_after_action)
+
+        permitted_actions = [
+            "CREATE_CHANGELOG",
+            "CREATE_DUBLIN_CORE_JSON",
+            "INGEST_FILE",
+            "VALIDATE_FILETYPE",
+            "COMPUTE_CHECKSUM",
+            "EXTRACT_METADATA",
+            "NORMALISE_FILENAME",
+            "NORMALISE_METADATA",
+            "CREATE_DIRECTORY",
+            "MOVE",
+            "QUARANTINE_FILE",
+            "CREATE_BAG",
+            "VALIDATE_BAG",
+            "ERROR",
+        ]
+        if action not in permitted_actions:
+            note = f"{action} is not a valid action type."
+            action = "ERROR"
+
+        with open(self.log_file, mode="a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    timestamp,
+                    action,
+                    path_before_action,
+                    path_after_action,
+                    hash_before_action,
+                    hash_after_action,
+                    note,
+                ]
+            )
+            f.flush()
+
+        match action:
+            case "ERROR":
+                new_status = "ERROR"
+            case "INGEST FILE":
+                new_status = "INGESTED"
+            case "VALIDATE_FILE":
+                new_status = "VALIDATED"
+            case "QUARANTINE_FILE":
+                new_status = "QUARANTINED"
+            case _:
+                new_status = state.status
+
+        return replace(
+            state,
+            current_path=path_after_action,
+            current_hash=hash_after_action,
+            status=new_status,
+        )
+
     # Create and write to CSV
     def _create_csv(self):
+        #TODO: move to init
         if not self._fail_if_file_exists(
             self.log_file, "changelog", "CREATE_CHANGELOG"
         ):
@@ -94,6 +169,7 @@ class LogWriter:
         new_hash: str = "",
         note: str = "",
     ) -> None:
+        #TODO: Remove once superfluous
         csv_exists = os.path.isfile(self.log_file)
         if not csv_exists:
             self._create_csv()
@@ -125,7 +201,7 @@ class LogWriter:
                 pass
             else:
                 new_hash = self._calculate_sha256(path_after)
-                    
+
             writer.writerow(
                 [
                     datetime.now().strftime(self.dt_format),
@@ -139,11 +215,15 @@ class LogWriter:
             )
             f.flush()
 
-    def log_action(self, context: FileState, action: str, new_path: str, note: str = ""):
-        hash_before = context.current_hash or 'N/A'
+    def log_action(
+        self, context: FileState, action: str, new_path: str, note: str = ""
+    ):
+        hash_before = context.current_hash or "N/A"
         new_hash = self._calculate_sha256(new_path)
 
-        self._write_csv(action, context.current_path, new_path, hash_before, new_hash, note)
+        self._write_csv(
+            action, context.current_path, new_path, hash_before, new_hash, note
+        )
 
         return replace(context, current_path=new_path, current_hash=new_hash)
 
@@ -229,17 +309,22 @@ class ProjectInitiator:
 
     def init_directory(self):
         """Initiate archive directory by making a 'staging' and a 'quarantine' directory, creating a blank changelog csv if none exists, and creating a metadata JSON if none exists."""
-        if os.path.isdir("staging") and os.path.isdir("quarantine") and os.path.isfile("changelog.csv") and os.path.isfile("metadata.json"):
-            print(f'{os.getcwd()} has already been initialised.')
+        if (
+            os.path.isdir("staging")
+            and os.path.isdir("quarantine")
+            and os.path.isfile("changelog.csv")
+            and os.path.isfile("metadata.json")
+        ):
+            print(f"{os.getcwd()} has already been initialised.")
             return
         LogWriter(self.project_name)._create_csv()
         self._create_dublin_core_json()
         if not os.path.isdir("staging"):
             os.mkdir("staging")
-            print('staging/ created.')
+            print("staging/ created.")
         if not os.path.isdir("quarantine"):
             os.mkdir("quarantine")
-            print('quarantine/ created.')
+            print("quarantine/ created.")
         print(f"Directory initialised at {os.getcwd()}.")
 
 
@@ -337,11 +422,11 @@ class DataIngester:
     def _ingest_file(self, ingest_function):
         """Ingest a single file"""
         state = FileState(
-                base_name=os.path.basename(self.path).split('/')[-1],
-                source_path=self.path,
-                current_path=self.path,
-                current_hash=None
-                )
+            base_name=os.path.basename(self.path).split("/")[-1],
+            source_path=self.path,
+            current_path=self.path,
+            current_hash=None,
+        )
 
         staged_path = (
             f"{self.staging_directory}{os.path.basename(self.path).split('/')[-1]}"
@@ -353,26 +438,52 @@ class DataIngester:
 
         if not res.returncode:
             new_hash = LogWriter()._calculate_sha256(staged_path)
-            state = replace(state, current_path=staged_path, current_hash=new_hash, status="INGESTED")
-            state = LogWriter().log_action(context=state, action="INGEST_FILE", new_path=state.current_path, note=stdout)
+            state = replace(
+                state,
+                current_path=staged_path,
+                current_hash=new_hash,
+                status="INGESTED",
+            )
+            state = LogWriter().log_action(
+                context=state,
+                action="INGEST_FILE",
+                new_path=state.current_path,
+                note=stdout,
+            )
         else:
             state = replace(state, status="NOT_INGESTED")
-            state = LogWriter().log_action(state, "ERROR", state.source_path, note=stdout)
+            state = LogWriter().log_action(
+                state, "ERROR", state.source_path, note=stdout
+            )
 
         if Utilities()._validate_file(state):
             state = replace(state, status="VALIDATED")
-            state = LogWriter().log_action(state, "VALIDATE_FILETYPE", state.current_path, note="File validation successful.")
+            state = LogWriter().log_action(
+                state,
+                "VALIDATE_FILETYPE",
+                state.current_path,
+                note="File validation successful.",
+            )
             print(state)
             pass
             # TODO: extract metadata
         else:
-            state = LogWriter().log_action(state, "VALIDATE_FILETYPE", state.current_path, note="File validation failed.")
+            state = LogWriter().log_action(
+                state,
+                "VALIDATE_FILETYPE",
+                state.current_path,
+                note="File validation failed.",
+            )
             Utilities()._quarantine_file(
                 state.current_path,
                 self.quarantine_directory,
                 "file validation",
             )
-            state = replace(state, current_path=f'{self.quarantine_directory}{state.base_name}', status="QUARANTINED")
+            state = replace(
+                state,
+                current_path=f"{self.quarantine_directory}{state.base_name}",
+                status="QUARANTINED",
+            )
 
     def _ingest_directory(self, ingest_function, destination_subdir):
         """Walk tree and ingest every file"""
@@ -381,7 +492,12 @@ class DataIngester:
 
     def ingest(self, dry_run: bool = False):
         if dry_run:
-            ingest_function = ["rsync", "-cain", self.path, f"{self.staging_directory}/"]
+            ingest_function = [
+                "rsync",
+                "-cain",
+                self.path,
+                f"{self.staging_directory}/",
+            ]
         else:
             ingest_function = ["rsync", "-cai", self.path, f"{self.staging_directory}/"]
 
@@ -398,8 +514,8 @@ class Utilities:
 
     def _validate_file(self, file_state: FileState) -> bool:
         file_path = file_state.current_path
-        magic = puremagic.from_file(file_path).lstrip('.')
-        extension = file_path.rsplit('.', 1)[-1].lstrip('.')
+        magic = puremagic.from_file(file_path).lstrip(".")
+        extension = file_path.rsplit(".", 1)[-1].lstrip(".")
 
         return magic == extension
 
