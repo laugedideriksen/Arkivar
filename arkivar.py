@@ -21,9 +21,14 @@ class FileState:
 
 # CHANGELOG
 class LogWriter:
-    def __init__(self, dt_format: str = "%Y%m%d-%H:%M:%S.%f") -> None:
-        self.log_file = "changelog.csv"
+    def __init__(self, log_file: str = "changelog.csv", dt_format: str = "%Y%m%d-%H:%M:%S.%f") -> None:
+        self.log_file = log_file
         self.dt_format = dt_format
+        self._ensure_init()
+
+    def _ensure_init(self):
+        if not os.path.isdir("staging") and not os.path.isdir("quarantine") and not os.path.isfile("changelog.csv") and not os.path.isfile("metadata.json"):
+            raise Exception(f"{os.getcwd()} doesn't seem to be initialised. Please run init command.")
 
     def _fail_if_file_exists(self, file_path, name, action) -> bool:
         if os.path.isfile(file_path):
@@ -37,7 +42,7 @@ class LogWriter:
             return False
         return True
 
-    def _calculate_sha256(self, file_path):
+    def _calculate_sha256(self, file_path: str)->str:
         if not os.path.exists(file_path):
             return f"FILE_MISSING: {file_path}"
         with open(file_path, "rb") as f:
@@ -224,12 +229,17 @@ class ProjectInitiator:
 
     def init_directory(self):
         """Initiate archive directory by making a 'staging' and a 'quarantine' directory, creating a blank changelog csv if none exists, and creating a metadata JSON if none exists."""
+        if os.path.isdir("staging") and os.path.isdir("quarantine") and os.path.isfile("changelog.csv") and os.path.isfile("metadata.json"):
+            print(f'{os.getcwd()} has already been initialised.')
+            return
         LogWriter(self.project_name)._create_csv()
         self._create_dublin_core_json()
         if not os.path.isdir("staging"):
             os.mkdir("staging")
+            print('staging/ created.')
         if not os.path.isdir("quarantine"):
             os.mkdir("quarantine")
+            print('quarantine/ created.')
         print(f"Directory initialised at {os.getcwd()}.")
 
 
