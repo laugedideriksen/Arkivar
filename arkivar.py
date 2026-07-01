@@ -38,7 +38,6 @@ def validate(data_source: FileState, logger: LogWriter) -> FileState:
             data_source, "ERROR", data_source.current_path, note="Signature mismatch"
         )
 
-
 def quarantine(
     data_source: FileState, logger: LogWriter, quarantine_dir: str
 ) -> FileState:
@@ -67,6 +66,7 @@ def quarantine(
 
 
 def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
+    """Extract metadata from file and add it to FileState"""
     if data_source.status != "VALIDATED":
         return data_source
 
@@ -82,9 +82,17 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
     )
 
 
-def write_sidecar(data_source) -> FileState:
+def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
+    """Reformat extracted metadata, ombine it with project metadata and write it to a sidecar file."""
     pass
 
 
-def organise(data_source: FileState) -> FileState:
+def organise(data_source: FileState, logger: LogWriter) -> FileState:
     """Move files to bag folders"""
+    pass
+
+def finalise(logger: LogWriter)->None:
+    #TODO: calculate checksum of changelog.
+    log_file = logger.log_file
+    logger._calculate_sha256(os.path.abspath(log_file))
+    pass

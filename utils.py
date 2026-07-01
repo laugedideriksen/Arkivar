@@ -1,7 +1,7 @@
+import os
 import puremagic
 from data_objects import FileState
 import subprocess
-
 
 def validate_file(file_state: FileState) -> bool:
     file_path = file_state.current_path
@@ -21,3 +21,7 @@ def run_rsync(source: str, destination: str, dry_run: bool = False) -> tuple[boo
         return (res.returncode == 0, res.stdout)
     except Exception as e:
         return (False, str(e))
+
+def create_filestate(source_path: str)->FileState:
+    file_name = os.path.basename(source_path)
+    return FileState(source_path, current_path=source_path, base_name=file_name, status="NEW")

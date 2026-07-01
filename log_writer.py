@@ -46,27 +46,6 @@ class LogWriter:
         hash_before_action = state.current_hash or "N/A"
         hash_after_action = self._calculate_sha256(path_after_action)
 
-        # TODO: is this even necessary? I don't think it is.'
-        permitted_actions = [
-            "CREATE_CHANGELOG",
-            "CREATE_DUBLIN_CORE_JSON",
-            "INGEST_FILE",
-            "VALIDATE_FILETYPE",
-            "COMPUTE_CHECKSUM",
-            "EXTRACT_METADATA",
-            "NORMALISE_FILENAME",
-            "NORMALISE_METADATA",
-            "CREATE_DIRECTORY",
-            "MOVE",
-            "QUARANTINE_FILE",
-            "CREATE_BAG",
-            "VALIDATE_BAG",
-            "ERROR",
-        ]
-        if action not in permitted_actions:
-            note = f"{action} is not a valid action type."
-            action = "ERROR"
-
         with open(self.log_file, mode="a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(
@@ -109,3 +88,36 @@ class LogWriter:
             current_hash=hash_after_action,
             status=new_status,
         )
+
+
+    def _write_log_entry(
+        self,
+        action_type: str,
+        path_before: str,
+        path_after: str,
+        hash_before: str = "N/A",
+        new_hash: str = "",
+        note: str = "",
+    ) -> None:
+        # TODO: Remove once superfluous
+
+        self._ensure_init()
+
+        with open(self.log_file, mode="a", newline="") as f:
+            writer = csv.writer(f)
+
+            if not new_hash == "N/A":
+                new_hash = self._calculate_sha256(path_after)
+
+            writer.writerow(
+                [
+                    datetime.now().strftime(self.dt_format),
+                    action_type,
+                    path_before,
+                    path_after,
+                    hash_before,
+                    new_hash,
+                    note,
+                ]
+            )
+            f.flush()
