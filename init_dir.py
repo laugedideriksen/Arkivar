@@ -3,6 +3,7 @@ import csv
 import json
 from log_writer import LogWriter
 from datetime import datetime
+from utils import dc_template
 
 
 class ProjectInitiator:
@@ -34,41 +35,7 @@ class ProjectInitiator:
         ):
             return
 
-        dc_dict = dict(
-            contributors=[
-                "An entity responsible for making contributions to the resource."
-            ],
-            coverage=[
-                "The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction under which the resource is relevant."
-            ],
-            creators=["An entity primarily responsible for making the resource."],
-            dates=[
-                f"A point or period of time associated with an event in the lifecycle of the resource. Probably {self.start_date}"
-            ],
-            descriptions=[
-                "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource."
-            ],
-            formats=[
-                "The file format, physical medium, or dimensions of the resource."
-            ],
-            identifiers=[
-                f"An unambiguous reference to the resource within a given context. Recommended best practice is to identify the resource by means of a string conforming to a formal identification system. Probably {self.start_date + '_' + self.project_name}"
-            ],
-            languages=["A language of the resource."],
-            publishers=["An entity responsible for making the resource available."],
-            relations=[
-                "A related resource. Recommended practice is to identify the related resource by means of a URI. If this is not possible or feasible, a string conforming to a formal identification system may be provided."
-            ],
-            rights=["Information about rights held in and over the resource."],
-            sources=[
-                "A related resource from which the described resource is derived."
-            ],
-            subject=[
-                "The topic of the resource. Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary."
-            ],
-            titles=["A name given to the resource."],
-            types=["The nature or genre of the resource."],
-        )
+        dc_dict = dc_template()
 
         with open("metadata.json", "w") as f:
             json.dump(dc_dict, f, sort_keys=False, indent=4, ensure_ascii=False)

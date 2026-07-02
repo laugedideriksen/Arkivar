@@ -1,7 +1,8 @@
 from data_objects import FileState
 from log_writer import LogWriter
-from utils import run_rsync, validate_file, run_exiftool
+from utils import run_rsync, validate_file, run_exiftool, dc_template, metadata_map, type_specific_metadata
 import os
+import json
 
 
 def stage(data_source: FileState, logger: LogWriter, dest_path: str) -> FileState:
@@ -90,11 +91,32 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
                 )
     else:
         return logger.change_state(
-                data_source, "ERROR", data_source.current_path, note=f"Exiftool failed: {msg}"
+                data_source, "ERROR", data_source.current_path, note=f"Exiftool failed: {output}"
         )
 
+def clean_project_metadata(logger: LogWriter)->None:
+    #TODO: TEST!!! And figure out how to log this action.
+    """Replaces any unaltered field in metadata.json with an empty list"""
+
+    dc_template = dc_template()
+    project_metadata = json.loads("metadata.json")
+
+    for key, value in project_metadata.items():
+        if value == dc_template[key]:
+            project_metadata[key] = []
+
+
+    with open("metadata.json", "w") as f:
+        json.dump(project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False)
+
+def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
+    """Consolidate extracted metadata and project metadata"""
+    if data_source.status != "METADATA_EXTRACTED":
+        return data_source
+
+
 def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
-    """Reformat extracted metadata, ombine it with project metadata and write it to a sidecar file."""
+    """Reformat extracted metadata, combine it with project metadata and write it to a sidecar file."""
     pass
 
 

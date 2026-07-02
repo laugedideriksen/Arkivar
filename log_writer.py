@@ -68,6 +68,7 @@ class LogWriter:
             "ERROR": "ERROR",
             "MOVE": "MOVED",
             "METADATA_EXTRACT": "METADATA_EXTRACTED",
+
             "STAGE_FILE": "FILE_STAGED",
             "CREATE_SIDECAR": "SIDECAR_CREATED",
         }
