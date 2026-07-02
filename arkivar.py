@@ -1,6 +1,6 @@
 from data_objects import FileState
 from log_writer import LogWriter
-from utils import run_rsync, validate_file
+from utils import run_rsync, validate_file, run_exiftool
 import os
 
 
@@ -71,16 +71,27 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
         return data_source
 
     # TODO: Extract metadata
+    success, output = run_exiftool(data_source.source_path)
 
-    extracted_metadata = {}
-
-    return logger.change_state(
-        data_source,
-        "METADATA_EXTRACT",
-        data_source.current_path,
-        meta_data=extracted_metadata,
-    )
-
+    if success and output != {}:
+        return logger.change_state(
+                data_source,
+                "METADATA_EXTRACT",
+                data_source.current_path,
+                meta_data=output,
+                )
+    elif success and output == {}:
+        return logger.change_state(
+                data_source,
+                "METADATA_EXTRACT",
+                data_source.current_path,
+                meta_data=output,
+                note="No metadata to extract"
+                )
+    else:
+        return logger.change_state(
+                data_source, "ERROR", data_source.current_path, note=f"Exiftool failed: {msg}"
+        )
 
 def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
     """Reformat extracted metadata, ombine it with project metadata and write it to a sidecar file."""
