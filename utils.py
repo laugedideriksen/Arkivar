@@ -5,6 +5,7 @@ from data_objects import FileState
 import subprocess
 from typing import Any
 
+
 def validate_file(file_state: FileState) -> bool:
     file_path = file_state.current_path
     magic = puremagic.from_file(file_path).lstrip(".")
@@ -24,76 +25,102 @@ def run_rsync(source: str, destination: str, dry_run: bool = False) -> tuple[boo
     except Exception as e:
         return (False, str(e))
 
-def run_exiftool(file_path)->tuple[bool, Any]:
-    cmd = ['exiftool', '-j', '-n', '-G', '-api', 'LargeFileSupport=1', file_path]
+
+def run_exiftool(file_path) -> tuple[bool, Any]:
+    cmd = ["exiftool", "-j", "-n", "-G", "-api", "LargeFileSupport=1", file_path]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True, encoding="utf8")
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, check=True, encoding="utf8"
+        )
         data = json.loads(res.stdout)
         return (res.returncode == 0, data[0]) if data else (res.returncode == 0, {})
     except subprocess.CalledProcessError as e:
         return (False, str(e))
 
 
-def create_filestate(source_path: str)->FileState:
+def create_filestate(source_path: str) -> FileState:
     file_name = os.path.basename(source_path)
-    return FileState(source_path, current_path=source_path, base_name=file_name, status="NEW")
+    return FileState(
+        source_path, current_path=source_path, base_name=file_name, status="NEW"
+    )
+
 
 def dc_template() -> dict:
     return dict(
-            contributors=[
-                "An entity responsible for making contributions to the resource."
-            ],
-            coverage=[
-                "The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction under which the resource is relevant."
-            ],
-            creators=["An entity primarily responsible for making the resource."],
-            dates=[
-                "A point or period of time associated with an event in the lifecycle of the resource."
-            ],
-            descriptions=[
-                "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource."
-            ],
-            formats=[
-                "The file format, physical medium, or dimensions of the resource."
-            ],
-            identifiers=[
-                "An unambiguous reference to the resource within a given context. Recommended best practice is to identify the resource by means of a string conforming to a formal identification system."
-            ],
-            languages=["A language of the resource."],
-            publishers=["An entity responsible for making the resource available."],
-            relations=[
-                "A related resource. Recommended practice is to identify the related resource by means of a URI. If this is not possible or feasible, a string conforming to a formal identification system may be provided."
-            ],
-            rights=["Information about rights held in and over the resource."],
-            sources=[
-                "A related resource from which the described resource is derived."
-            ],
-            subject=[
-                "The topic of the resource. Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary."
-            ],
-            titles=["A name given to the resource."],
-            types=["The nature or genre of the resource."],
-        )
+        contributors=[
+            "An entity responsible for making contributions to the resource."
+        ],
+        coverage=[
+            "The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction under which the resource is relevant."
+        ],
+        creators=["An entity primarily responsible for making the resource."],
+        dates=[
+            "A point or period of time associated with an event in the lifecycle of the resource."
+        ],
+        descriptions=[
+            "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource."
+        ],
+        formats=["The file format, physical medium, or dimensions of the resource."],
+        identifiers=[
+            "An unambiguous reference to the resource within a given context. Recommended best practice is to identify the resource by means of a string conforming to a formal identification system."
+        ],
+        languages=["A language of the resource."],
+        publishers=["An entity responsible for making the resource available."],
+        relations=[
+            "A related resource. Recommended practice is to identify the related resource by means of a URI. If this is not possible or feasible, a string conforming to a formal identification system may be provided."
+        ],
+        rights=["Information about rights held in and over the resource."],
+        sources=["A related resource from which the described resource is derived."],
+        subject=[
+            "The topic of the resource. Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary."
+        ],
+        titles=["A name given to the resource."],
+        types=["The nature or genre of the resource."],
+    )
+
 
 def metadata_map() -> dict:
     """Returns a dictionary mapping exiftool entries to Dublin Core fields."""
     return {
-            "File Name": "titles",
-            "Date/Time Original": "dates",
-            "File Type": "types",
-            "Artist": "creator",
-            "Author": "creator",
-            "Image Description": "description",
-            "Description": "description",
-            }
+        "File Name": "titles",
+        "Date/Time Original": "dates",
+        "File Type": "types",
+        "Artist": "creator",
+        "Author": "creator",
+        "Image Description": "description",
+        "Description": "description",
+    }
+
 
 def type_specific_metadata() -> dict:
     """Returns a dictionary of exiftool entries for specific file types."""
     return {
-            "jpg-info": ["File Size", "Image Width", "Image Height"],
-            "exposure-info": ["Exposure Time", "F Number", "ISO", "Focal Length In 35mm Format"],
-            "camera-info": ["Make", "Camera Model Name", "Lens Make", "Lens Model"],
-            "pdf-info": ["File Size", "PDF Version", "Page Count", "Creator", "Producer", "Creator Tool"],
-            "wav-info": ["File Size", "Duration", "Sample Rate", "Num Channels"],
-            "mp3-info": ["File Size", "Duration", "Title", "Album", "Year", "Artist", "Band", "Track", "Media"],
-            }
+        "jpg-info": ["File Size", "Image Width", "Image Height"],
+        "exposure-info": [
+            "Exposure Time",
+            "F Number",
+            "ISO",
+            "Focal Length In 35mm Format",
+        ],
+        "camera-info": ["Make", "Camera Model Name", "Lens Make", "Lens Model"],
+        "pdf-info": [
+            "File Size",
+            "PDF Version",
+            "Page Count",
+            "Creator",
+            "Producer",
+            "Creator Tool",
+        ],
+        "wav-info": ["File Size", "Duration", "Sample Rate", "Num Channels"],
+        "mp3-info": [
+            "File Size",
+            "Duration",
+            "Title",
+            "Album",
+            "Year",
+            "Artist",
+            "Band",
+            "Track",
+            "Media",
+        ],
+    }

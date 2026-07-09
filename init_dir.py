@@ -2,102 +2,127 @@ import os
 import csv
 import json
 from log_writer import LogWriter
-from datetime import datetime
 from utils import dc_template
+from pathlib import Path
 
 
-class ProjectInitiator:
-    def __init__(
-        self,
-        project_directory: str = os.getcwd(),
-        project_name: str = "ProjectName",
-        start_date: str = "YYYYmmdd",
-    ) -> None:
-        self.project_directory = project_directory
-        self.project_name = project_name
-        self.start_date = start_date
-        self.metadata_json = "metadata.json"
+def _create_changelog(project_path: Path) -> LogWriter:
+    log_file = project_path / "changelog.csv"
 
-    @property
-    def project_directory(self):
-        """The project_directory property."""
-        return self._project_directory
+    with open(log_file, mode="a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "timestamp",
+                "action_type",
+                "file_path_before",
+                "file_path_after",
+                "hash_before",
+                "hash_after",
+                "note",
+            ]
+        )
+        f.flush()
 
-    @project_directory.setter
-    def project_directory(self, value):
-        if not os.path.isdir(value):
-            raise ValueError(f"{value} does not exist or is not a directory.")
-        self._project_directory = value
+    print(f"changelog created at {log_file}")
 
-    def _create_dublin_core_json(self) -> None:
-        if not LogWriter(self.project_name)._fail_if_file_exists(
-            f"{self.metadata_json}", "metadata JSON", "CREATE_DUBLIN_CORE_JSON"
-        ):
-            return
+    logger = LogWriter(log_file)
 
-        dc_dict = dc_template()
+    logger._write_log_entry(
+        action_type="CREATE_CHANGELOG",
+        path_before="N/A",
+        path_after=os.path.abspath(log_file),
+        note="",
+    )
 
+    return logger
+
+
+def _create_dirs(project_path: Path, logger: LogWriter) -> None:
+    staging_dir = project_path / "staging"
+    quarantine_dir = project_path / "quarantine"
+    if staging_dir.exists():
+        logger._write_log_entry(
+            action_type="ERROR",
+            path_before=str(staging_dir),
+            path_after=os.path.abspath(staging_dir),
+            note="CREATE_STAGING_DIR failed: staging/ already exists",
+        )
+    else:
+        os.makedirs(staging_dir, exist_ok=False)
+        logger._write_log_entry(
+            action_type="CREATE_STAGING_DIR",
+            path_before="N/A",
+            path_after=os.path.abspath(staging_dir),
+            note="",
+        )
+        print("staging/ created.")
+
+    if quarantine_dir.exists():
+        logger._write_log_entry(
+            action_type="ERROR",
+            path_before=str(quarantine_dir),
+            path_after=os.path.abspath(quarantine_dir),
+            note="CREATE_QUARANTINE_DIR failed: quarantine/ already exists",
+        )
+    else:
+        os.makedirs(quarantine_dir, exist_ok=False)
+        print("quarantine/ created.")
+        logger._write_log_entry(
+            action_type="CREATE_QUARANTINE_DIR",
+            path_before="N/A",
+            path_after=os.path.abspath(staging_dir),
+            note="",
+        )
+
+
+def _create_metadata_template(project_path: Path, logger: LogWriter):
+    metadata_temp = project_path / "metadata.json"
+    dc_dict = dc_template()
+
+    if metadata_temp.exists():
+        logger._write_log_entry(
+            action_type="ERROR",
+            path_before=str(metadata_temp),
+            path_after=os.path.abspath(metadata_temp),
+            note="CREATE_METADATA_TEMPLATE failed: metadata.json already exists",
+        )
+    else:
         with open("metadata.json", "w") as f:
             json.dump(dc_dict, f, sort_keys=False, indent=4, ensure_ascii=False)
 
-        LogWriter(self.project_name)._write_csv(
-            "CREATE_DUBLIN_CORE_JSON",
-            "N/A",
-            os.path.abspath(self.metadata_json),
-            "N/A",
+        print("metadata.json created")
+        logger._write_log_entry(
+            action_type="CREATE_METADATA_TEMPLATE",
+            path_before=str(metadata_temp),
+            path_after=os.path.abspath(metadata_temp),
+            note="",
         )
 
-    def init_directory(self):
-        """Initiate archive directory by making a 'staging' and a 'quarantine' directory, creating a blank changelog csv if none exists, and creating a metadata JSON if none exists."""
-        if (
-            os.path.isdir("staging")
-            and os.path.isdir("quarantine")
-            and os.path.isfile("changelog.csv")
-            and os.path.isfile("metadata.json")
-        ):
-            print(f"{os.getcwd()} has already been initialised.")
-            return
-        LogWriter(self.project_name)._create_csv()
-        self._create_dublin_core_json()
-        if not os.path.isdir("staging"):
-            os.mkdir("staging")
-            print("staging/ created.")
-        if not os.path.isdir("quarantine"):
-            os.mkdir("quarantine")
-            print("quarantine/ created.")
-        print(f"Directory initialised at {os.getcwd()}.")
 
-    def _create_csv(self):
-        # TODO: move to init
-        if not self._fail_if_file_exists(
-            self.log_file, "changelog", "CREATE_CHANGELOG"
-        ):
-            return
+def init_dir(project_path: str | Path):
+    project_path = Path(project_path).resolve()
 
-        with open(self.log_file, mode="a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(
-                [
-                    "timestamp",
-                    "action_type",
-                    "file_path_before",
-                    "file_path_after",
-                    "hash_before",
-                    "hash_after",
-                    "note",
-                ]
-            )
-            f.flush()
+    if not project_path.exists():
+        os.mkdir(project_path)
+        print(f"project directory initiated at {project_path}")
+    elif (
+        os.path.isdir(project_path / "staging")
+        and os.path.isdir(project_path / "quarantine")
+        and os.path.isfile(project_path / "changelog.csv")
+        and os.path.isfile(project_path / "metadata.json")
+    ):
+        print(f"{project_path} has already been initialised.")
+        return
 
-            writer.writerow(
-                [
-                    datetime.now().strftime(self.dt_format),
-                    "CREATE_CHANGELOG",
-                    "N/A",
-                    os.path.abspath(self.log_file),
-                    "N/A",
-                    self._calculate_sha256(os.path.abspath(self.log_file)),
-                    "",
-                ]
-            )
-            f.flush()
+    logger = _create_changelog(project_path)
+    _create_dirs(project_path, logger)
+    _create_metadata_template(project_path, logger)
+
+    if (
+        os.path.isdir(project_path / "staging")
+        and os.path.isdir(project_path / "quarantine")
+        and os.path.isfile(project_path / "changelog.csv")
+        and os.path.isfile(project_path / "metadata.json")
+    ):
+        print(f"{project_path} has been initialised.")

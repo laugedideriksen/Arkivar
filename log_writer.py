@@ -4,15 +4,19 @@ from datetime import datetime
 from hashlib import sha256
 from data_objects import FileState
 from dataclasses import replace
+from pathlib import Path
 
 
 class LogWriter:
     def __init__(
-        self, log_file: str = "changelog.csv", dt_format: str = "%Y%m%d-%H:%M:%S.%f"
+        self,
+        log_file: str | Path = "changelog.csv",
+        dt_format: str = "%Y%m%d-%H:%M:%S.%f",
     ) -> None:
         self.log_file = log_file
         self.dt_format = dt_format
-        self._ensure_init()
+        # TODO: Is ensure init necessary?
+        # self._ensure_init()
 
     def _ensure_init(self):
         if not (
@@ -68,7 +72,6 @@ class LogWriter:
             "ERROR": "ERROR",
             "MOVE": "MOVED",
             "METADATA_EXTRACT": "METADATA_EXTRACTED",
-
             "STAGE_FILE": "FILE_STAGED",
             "CREATE_SIDECAR": "SIDECAR_CREATED",
         }
@@ -90,7 +93,6 @@ class LogWriter:
             status=new_status,
         )
 
-
     def _write_log_entry(
         self,
         action_type: str,
@@ -100,9 +102,8 @@ class LogWriter:
         new_hash: str = "",
         note: str = "",
     ) -> None:
-        # TODO: Remove once superfluous
 
-        self._ensure_init()
+        #        self._ensure_init()
 
         with open(self.log_file, mode="a", newline="") as f:
             writer = csv.writer(f)
