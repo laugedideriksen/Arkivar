@@ -10,9 +10,10 @@ from utils import (
 )
 import os
 import json
+from pathlib import Path
 
 
-def stage(data_source: FileState, logger: LogWriter, dest_path: str) -> FileState:
+def stage(data_source: FileState, logger: LogWriter, dest_path: Path) -> FileState:
     """Move file to staging/."""
     filename = os.path.basename(data_source.source_path)
     target_path = os.path.join(dest_path, filename)
@@ -43,15 +44,15 @@ def validate(data_source: FileState, logger: LogWriter) -> FileState:
         )
     else:
         return logger.change_state(
-            data_source, "ERROR", data_source.current_path, note="Signature mismatch"
+                data_source, "VALIDATION_FAILED", data_source.current_path, note="FILE VALIDATION FAILED"
         )
 
 
 def quarantine(
-    data_source: FileState, logger: LogWriter, quarantine_dir: str
+    data_source: FileState, logger: LogWriter, quarantine_dir: Path
 ) -> FileState:
     """Move files that fail check to quarantine/"""
-    if data_source.status != "ERROR":
+    if data_source.status != "VALIDATION_FAILED":
         return data_source
 
     filename = os.path.basename(data_source.current_path)
@@ -121,20 +122,20 @@ def clean_project_metadata(logger: LogWriter) -> None:
         json.dump(project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False)
 
 
-def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
-    """Consolidate extracted metadata and project metadata"""
-    if data_source.status != "METADATA_EXTRACTED":
-        return data_source
-
-
-def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
-    """Reformat extracted metadata, combine it with project metadata and write it to a sidecar file."""
-    pass
-
-
-def organise(data_source: FileState, logger: LogWriter) -> FileState:
-    """Move files to bag folders"""
-    pass
+#def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
+#    """Consolidate extracted metadata and project metadata"""
+#    if data_source.status != "METADATA_EXTRACTED":
+#        return data_source
+#
+#
+#def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
+#    """Reformat extracted metadata, combine it with project metadata and write it to a sidecar file."""
+#    pass
+#
+#
+#def organise(data_source: FileState, logger: LogWriter) -> FileState:
+#    """Move files to bag folders"""
+#    pass
 
 
 def finalise(logger: LogWriter) -> None:

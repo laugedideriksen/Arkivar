@@ -68,6 +68,7 @@ class LogWriter:
         status_map = {
             "INGEST_FILE": "INGESTED",
             "VALIDATE_FILETYPE": "VALIDATED",
+            "VALIDATION_FAILED": "VALIDATION_FAILED",
             "QUARANTINE_FILE": "QUARANTINED",
             "ERROR": "ERROR",
             "MOVE": "MOVED",

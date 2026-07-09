@@ -10,6 +10,13 @@ def validate_file(file_state: FileState) -> bool:
     file_path = file_state.current_path
     magic = puremagic.from_file(file_path).lstrip(".")
     extension = file_path.rsplit(".", 1)[-1].lstrip(".")
+
+    match extension: # Some markdown files have are identified as txt files. This makes sure they don't fail to validate
+        case "md":
+            extension = "txt"
+        case _:
+            pass
+
     return magic == extension
 
 

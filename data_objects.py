@@ -7,7 +7,7 @@ import os
 class FileState:
     source_path: str
     current_path: str
-    current_hash: Optional[str]
     base_name: str
-    metadata: Optional[dict]
+    current_hash: Optional[str] = None
+    metadata: Optional[dict] = None
     status: str = "NEW"

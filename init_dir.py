@@ -9,6 +9,17 @@ from pathlib import Path
 def _create_changelog(project_path: Path) -> LogWriter:
     log_file = project_path / "changelog.csv"
 
+    if log_file.exists():
+        logger = LogWriter(log_file)
+        logger._write_log_entry(
+            action_type="ERROR",
+            path_before=str(log_file),
+            path_after=os.path.abspath(log_file),
+            new_hash="N/A",
+            note="CREATE_CHANGELOG failed: changelog.csv already exists",
+        )
+        return logger
+
     with open(log_file, mode="a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -46,6 +57,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             action_type="ERROR",
             path_before=str(staging_dir),
             path_after=os.path.abspath(staging_dir),
+            new_hash="N/A",
             note="CREATE_STAGING_DIR failed: staging/ already exists",
         )
     else:
@@ -54,6 +66,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             action_type="CREATE_STAGING_DIR",
             path_before="N/A",
             path_after=os.path.abspath(staging_dir),
+            new_hash="N/A",
             note="",
         )
         print("staging/ created.")
@@ -63,6 +76,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             action_type="ERROR",
             path_before=str(quarantine_dir),
             path_after=os.path.abspath(quarantine_dir),
+            new_hash="N/A",
             note="CREATE_QUARANTINE_DIR failed: quarantine/ already exists",
         )
     else:
@@ -71,6 +85,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
         logger._write_log_entry(
             action_type="CREATE_QUARANTINE_DIR",
             path_before="N/A",
+            new_hash="N/A",
             path_after=os.path.abspath(staging_dir),
             note="",
         )
@@ -88,7 +103,7 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
             note="CREATE_METADATA_TEMPLATE failed: metadata.json already exists",
         )
     else:
-        with open("metadata.json", "w") as f:
+        with open(metadata_temp, "w") as f:
             json.dump(dc_dict, f, sort_keys=False, indent=4, ensure_ascii=False)
 
         print("metadata.json created")
