@@ -23,7 +23,8 @@ def _ingest_file(
     if data_source.status == "VALIDATED":
         data_source = arkivar.extract_metadata(data_source, logger)
 
-    # state = arkivar.consolidate_metadata(state, logger)
+    if data_source.status == "METADATA_EXTRACTED":
+        data_source = arkivar.consolidate_metadata(data_source, logger)
     # state = arkivar.write_sidecar(state, logger)
     # state = arkivar.organise(state, logger)
     # arkivar.finalise(logger)
@@ -44,7 +45,6 @@ def ingest(source_path: str, project_path: str | Path):
     logger = log_writer.LogWriter(project_path / "changelog.csv")
     # TODO: add ensure init
 
-    print(project_path)
     arkivar.clean_project_metadata(project_path, logger)
 
     if not os.path.exists(source_path):

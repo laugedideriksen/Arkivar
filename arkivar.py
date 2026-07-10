@@ -11,6 +11,7 @@ from utils import (
 import os
 import json
 from pathlib import Path
+from pprint import pprint
 
 
 def stage(data_source: FileState, logger: LogWriter, dest_path: Path) -> FileState:
@@ -113,29 +114,54 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
 def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
     # TODO: TEST!!! And figure out how to log this action.
     """Replaces any unaltered field in metadata.json with an empty list"""
+    try:
+        metadata_file = project_path / "metadata.json"
+        dc_temp = dc_template()
+        with open(metadata_file, "r") as f:
+            project_metadata = json.load(f)
 
+        for key, value in project_metadata.items():
+            if value == dc_temp[key]:
+                project_metadata[key] = []
+
+        with open(metadata_file, "w") as f:
+            json.dump(project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False)
+
+        logger._write_log_entry(
+                action_type="CLEAN_PROJECT_METADATA",
+                path_before=str(metadata_file),
+                path_after=str(metadata_file),
+                )
+
+        print("metadata.json has been cleaned")
+    except Exception as e:
+        raise e
+
+
+def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
+    """Consolidate extracted metadata and project metadata"""
+    if data_source.status != "METADATA_EXTRACTED":
+        return data_source
+
+    object_path = Path(data_source.current_path)
+    project_path = object_path.parent.parent
     metadata_file = project_path / "metadata.json"
-    print(metadata_file)
-    dc_temp = dc_template()
     with open(metadata_file, "r") as f:
         project_metadata = json.load(f)
+    object_metadata = data_source.metadata
+    filetype_metadata = type_specific_metadata(object_path.suffix)
 
-    print(project_metadata)
+    # Create metadata template for data_source based on project metadata, and exif fields specific to its filetype
+    for k, v in filetype_metadata.items():
+       object_metadata_template = project_metadata | {k: v}
 
-    for key, value in project_metadata.items():
-        if value == dc_temp[key]:
-            project_metadata[key] = []
+#TODO: iterate over object_metadata_template and replace existing values with values from data_source.metadata, if present. Use metadata_map to translate naming conventions.
+#TODO: Might make more sense to insert values to filetype metadata and only then replace in/add to object metadata?
 
-    with open(metadata_file, "w") as f:
-        json.dump(project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False)
+    pprint(object_metadata_template, sort_dicts=False)
+    return data_source
 
 
-# def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
-#    """Consolidate extracted metadata and project metadata"""
-#    if data_source.status != "METADATA_EXTRACTED":
-#        return data_source
-#
-#
 # def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
 #    """Reformat extracted metadata, combine it with project metadata and write it to a sidecar file."""
 #    pass

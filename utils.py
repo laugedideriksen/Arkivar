@@ -88,29 +88,20 @@ def dc_template() -> dict:
 
 def metadata_map() -> dict:
     """Returns a dictionary mapping exiftool entries to Dublin Core fields."""
-    return {
-        "File Name": "titles",
-        "Date/Time Original": "dates",
-        "File Type": "types",
-        "Artist": "creator",
-        "Author": "creator",
-        "Image Description": "description",
-        "Description": "description",
-    }
+    return {"File Name": "titles", "Date/Time Original": "dates", "File Type": "types", "Artist": "creator", "Author": "creator", "Image Description": "description", "Description": "description",}
 
-
-def type_specific_metadata() -> dict:
-    """Returns a dictionary of exiftool entries for specific file types."""
-    return {
-        "jpg-info": ["File Size", "Image Width", "Image Height"],
-        "exposure-info": [
+def type_specific_metadata(suffix) -> dict:
+    """Returns a list of exiftool entries for specific file types."""
+    entries =  {
+        ".jpg": ["File Size", "Image Width", "Image Height"],
+        "exposure": [
             "Exposure Time",
             "F Number",
             "ISO",
             "Focal Length In 35mm Format",
         ],
-        "camera-info": ["Make", "Camera Model Name", "Lens Make", "Lens Model"],
-        "pdf-info": [
+        "camera": ["Make", "Camera Model Name", "Lens Make", "Lens Model"],
+        ".pdf": [
             "File Size",
             "PDF Version",
             "Page Count",
@@ -118,8 +109,8 @@ def type_specific_metadata() -> dict:
             "Producer",
             "Creator Tool",
         ],
-        "wav-info": ["File Size", "Duration", "Sample Rate", "Num Channels"],
-        "mp3-info": [
+        ".wav": ["File Size", "Duration", "Sample Rate", "Num Channels"],
+        ".mp3": [
             "File Size",
             "Duration",
             "Title",
@@ -130,4 +121,13 @@ def type_specific_metadata() -> dict:
             "Track",
             "Media",
         ],
+        ".txt": ["File:WordCount", "File:MIMEEncoding"],
     }
+
+    filetype_map = {
+            ".jpg": {"file": entries[".jpg"], "exposure": entries["exposure"], "camera": entries["camera"]},
+            ".txt": {"file": entries[".txt"]},
+            ".md": {"file": entries[".txt"]},
+            }
+
+    return filetype_map[suffix]
