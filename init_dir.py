@@ -18,6 +18,7 @@ def _create_changelog(project_path: Path) -> LogWriter:
             new_hash="N/A",
             note="CREATE_CHANGELOG failed: changelog.csv already exists",
         )
+        print(f"changelog.csv already exists at {log_file}")
         return logger
 
     with open(log_file, mode="a", newline="") as f:
@@ -35,7 +36,7 @@ def _create_changelog(project_path: Path) -> LogWriter:
         )
         f.flush()
 
-    print(f"changelog created at {log_file}")
+    print(f"changelog.csv created at {log_file}")
 
     logger = LogWriter(log_file)
 
@@ -60,6 +61,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             new_hash="N/A",
             note="CREATE_STAGING_DIR failed: staging/ already exists",
         )
+        print(f"staging/ already exists at {staging_dir}")
     else:
         os.makedirs(staging_dir, exist_ok=False)
         logger._write_log_entry(
@@ -69,7 +71,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             new_hash="N/A",
             note="",
         )
-        print("staging/ created.")
+        print(f"staging/ created at {staging_dir}")
 
     if quarantine_dir.exists():
         logger._write_log_entry(
@@ -79,6 +81,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             new_hash="N/A",
             note="CREATE_QUARANTINE_DIR failed: quarantine/ already exists",
         )
+        print(f"quarantine/ already exists at {quarantine_dir}")
     else:
         os.makedirs(quarantine_dir, exist_ok=False)
         print("quarantine/ created.")
@@ -89,6 +92,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             path_after=os.path.abspath(staging_dir),
             note="",
         )
+        print(f"quarantine/ created at {quarantine_dir}")
 
 
 def _create_metadata_template(project_path: Path, logger: LogWriter):
@@ -102,17 +106,18 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
             path_after=os.path.abspath(metadata_temp),
             note="CREATE_METADATA_TEMPLATE failed: metadata.json already exists",
         )
+        print(f"metadata.json already exists at {metadata_temp}")
     else:
         with open(metadata_temp, "w") as f:
             json.dump(dc_dict, f, sort_keys=False, indent=4, ensure_ascii=False)
 
-        print("metadata.json created")
         logger._write_log_entry(
             action_type="CREATE_METADATA_TEMPLATE",
             path_before=str(metadata_temp),
             path_after=os.path.abspath(metadata_temp),
             note="",
         )
+        print(f"metadata.json created at {metadata_temp}")
 
 
 def init_dir(project_path: str | Path):

@@ -44,7 +44,10 @@ def validate(data_source: FileState, logger: LogWriter) -> FileState:
         )
     else:
         return logger.change_state(
-                data_source, "VALIDATION_FAILED", data_source.current_path, note="FILE VALIDATION FAILED"
+            data_source,
+            "VALIDATION_FAILED",
+            data_source.current_path,
+            note="FILE VALIDATION FAILED",
         )
 
 
@@ -107,33 +110,38 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
         )
 
 
-def clean_project_metadata(logger: LogWriter) -> None:
+def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
     # TODO: TEST!!! And figure out how to log this action.
     """Replaces any unaltered field in metadata.json with an empty list"""
 
+    metadata_file = project_path / "metadata.json"
+    print(metadata_file)
     dc_temp = dc_template()
-    project_metadata = json.loads("metadata.json")
+    with open(metadata_file, "r") as f:
+        project_metadata = json.load(f)
+
+    print(project_metadata)
 
     for key, value in project_metadata.items():
         if value == dc_temp[key]:
             project_metadata[key] = []
 
-    with open("metadata.json", "w") as f:
+    with open(metadata_file, "w") as f:
         json.dump(project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False)
 
 
-#def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
+# def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
 #    """Consolidate extracted metadata and project metadata"""
 #    if data_source.status != "METADATA_EXTRACTED":
 #        return data_source
 #
 #
-#def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
+# def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
 #    """Reformat extracted metadata, combine it with project metadata and write it to a sidecar file."""
 #    pass
 #
 #
-#def organise(data_source: FileState, logger: LogWriter) -> FileState:
+# def organise(data_source: FileState, logger: LogWriter) -> FileState:
 #    """Move files to bag folders"""
 #    pass
 
