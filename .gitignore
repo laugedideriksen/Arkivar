@@ -14,3 +14,4 @@ quarantine/
 staging/
 changelog.csv
 metadata.json
+testfile*
