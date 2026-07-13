@@ -85,7 +85,7 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
         return data_source
 
     # TODO: Extract metadata
-    success, output = run_exiftool(data_source.source_path)
+    success, output = run_exiftool(data_source.current_path)
 
     if success and output != {}:
         return logger.change_state(
@@ -125,13 +125,15 @@ def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
                 project_metadata[key] = []
 
         with open(metadata_file, "w") as f:
-            json.dump(project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False)
+            json.dump(
+                project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False
+            )
 
         logger._write_log_entry(
-                action_type="CLEAN_PROJECT_METADATA",
-                path_before=str(metadata_file),
-                path_after=str(metadata_file),
-                )
+            action_type="CLEAN_PROJECT_METADATA",
+            path_before=str(metadata_file),
+            path_after=str(metadata_file),
+        )
 
         print("metadata.json has been cleaned")
     except Exception as e:
@@ -153,10 +155,10 @@ def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState
 
     # Create metadata template for data_source based on project metadata, and exif fields specific to its filetype
     for k, v in filetype_metadata.items():
-       object_metadata_template = project_metadata | {k: v}
+        object_metadata_template = project_metadata | {k: v}
 
-#TODO: iterate over object_metadata_template and replace existing values with values from data_source.metadata, if present. Use metadata_map to translate naming conventions.
-#TODO: Might make more sense to insert values to filetype metadata and only then replace in/add to object metadata?
+    # TODO: iterate over object_metadata_template and replace existing values with values from data_source.metadata, if present. Use metadata_map to translate naming conventions.
+    # TODO: Might make more sense to insert values to filetype metadata and only then replace in/add to object metadata?
 
     pprint(object_metadata_template, sort_dicts=False)
     return data_source

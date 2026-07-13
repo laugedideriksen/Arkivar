@@ -56,4 +56,4 @@ def ingest(source_path: str, project_path: str | Path):
 
 if __name__ == "__main__":
     # init_dir("testdir")
-    ingest("testfile.md", "testdir")
+    ingest("testfile.pdf", "testdir")

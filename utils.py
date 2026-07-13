@@ -88,11 +88,20 @@ def dc_template() -> dict:
 
 def metadata_map() -> dict:
     """Returns a dictionary mapping exiftool entries to Dublin Core fields."""
-    return {"File Name": "titles", "Date/Time Original": "dates", "File Type": "types", "Artist": "creator", "Author": "creator", "Image Description": "description", "Description": "description",}
+    return {
+        "File Name": "titles",
+        "Date/Time Original": "dates",
+        "File Type": "types",
+        "Artist": "creator",
+        "Author": "creator",
+        "Image Description": "description",
+        "Description": "description",
+    }
+
 
 def type_specific_metadata(suffix) -> dict:
     """Returns a list of exiftool entries for specific file types."""
-    entries =  {
+    entries = {
         ".jpg": ["File Size", "Image Width", "Image Height"],
         "exposure": [
             "Exposure Time",
@@ -125,9 +134,13 @@ def type_specific_metadata(suffix) -> dict:
     }
 
     filetype_map = {
-            ".jpg": {"file": entries[".jpg"], "exposure": entries["exposure"], "camera": entries["camera"]},
-            ".txt": {"file": entries[".txt"]},
-            ".md": {"file": entries[".txt"]},
-            }
+        ".jpg": {
+            "file": entries[".jpg"],
+            "exposure": entries["exposure"],
+            "camera": entries["camera"],
+        },
+        ".txt": {"file": entries[".txt"]},
+        ".md": {"file": entries[".txt"]},
+    }
 
     return filetype_map[suffix]

@@ -32,10 +32,11 @@ class LogWriter:
     def _calculate_sha256(self, file_path: str) -> str:
         if not os.path.exists(file_path):
             return f"FILE_MISSING: {file_path}"
+        h = sha256()
         with open(file_path, "rb") as f:
             for byte_block in iter(lambda: f.read(4096), b""):
-                sha256().update(byte_block)
-            return sha256().hexdigest()
+                h.update(byte_block)
+            return h.hexdigest()
 
     def change_state(
         self,

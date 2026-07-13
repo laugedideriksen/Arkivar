@@ -89,7 +89,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             action_type="CREATE_QUARANTINE_DIR",
             path_before="N/A",
             new_hash="N/A",
-            path_after=os.path.abspath(staging_dir),
+            path_after=os.path.abspath(quarantine_dir),
             note="",
         )
         print(f"quarantine/ created at {quarantine_dir}")
