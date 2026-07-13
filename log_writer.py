@@ -98,8 +98,8 @@ class LogWriter:
     def _write_log_entry(
         self,
         action_type: str,
-        path_before: str,
-        path_after: str,
+        path_before: str|Path,
+        path_after: str|Path,
         hash_before: str = "N/A",
         new_hash: str = "",
         note: str = "",
@@ -111,7 +111,7 @@ class LogWriter:
             writer = csv.writer(f)
 
             if not new_hash == "N/A":
-                new_hash = self._calculate_sha256(path_after)
+                new_hash = self._calculate_sha256(str(path_after))
 
             writer.writerow(
                 [
