@@ -1,14 +1,13 @@
 import os
 import arkivar
 import log_writer
-from data_objects import FileState
-from utils import create_filestate
+from data_objects import FileState, create_filestate
 from init_dir import init_dir
 from pathlib import Path
 
 
 def _ingest_file(
-    source_path: str, project_path: Path, logger: log_writer.LogWriter
+    source_path: Path, project_path: Path, logger: log_writer.LogWriter
 ) -> None:
     data_source = create_filestate(source_path)
     staging_dir = project_path / "staging"
@@ -40,7 +39,8 @@ def ingest_directory(source_path: str) -> None:
         pass
 
 
-def ingest(source_path: str, project_path: str | Path):
+def ingest(source_path: str | Path, project_path: str | Path):
+    source_path = Path(source_path).resolve()
     project_path = Path(project_path).resolve()
     logger = log_writer.LogWriter(project_path / "changelog.csv")
     # TODO: add ensure init

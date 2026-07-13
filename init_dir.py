@@ -13,9 +13,9 @@ def _create_changelog(project_path: Path) -> LogWriter:
         logger = LogWriter(log_file)
         logger._write_log_entry(
             action_type="ERROR",
-            path_before=str(log_file),
-            path_after=os.path.abspath(log_file),
-            new_hash="N/A",
+            path_before=log_file,
+            path_after=log_file,
+            new_hash=None,
             note="CREATE_CHANGELOG failed: changelog.csv already exists",
         )
         print(f"changelog.csv already exists at {log_file}")
@@ -42,8 +42,8 @@ def _create_changelog(project_path: Path) -> LogWriter:
 
     logger._write_log_entry(
         action_type="CREATE_CHANGELOG",
-        path_before="N/A",
-        path_after=os.path.abspath(log_file),
+        path_before=None,
+        path_after=log_file.resolve(),
         note="",
     )
 
@@ -56,9 +56,9 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
     if staging_dir.exists():
         logger._write_log_entry(
             action_type="ERROR",
-            path_before=str(staging_dir),
-            path_after=os.path.abspath(staging_dir),
-            new_hash="N/A",
+            path_before=staging_dir,
+            path_after=staging_dir,
+            new_hash=None,
             note="CREATE_STAGING_DIR failed: staging/ already exists",
         )
         print(f"staging/ already exists at {staging_dir}")
@@ -66,9 +66,9 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
         os.makedirs(staging_dir, exist_ok=False)
         logger._write_log_entry(
             action_type="CREATE_STAGING_DIR",
-            path_before="N/A",
-            path_after=os.path.abspath(staging_dir),
-            new_hash="N/A",
+            path_before=None,
+            path_after=staging_dir.resolve(),
+            new_hash=None,
             note="",
         )
         print(f"staging/ created at {staging_dir}")
@@ -76,9 +76,9 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
     if quarantine_dir.exists():
         logger._write_log_entry(
             action_type="ERROR",
-            path_before=str(quarantine_dir),
-            path_after=os.path.abspath(quarantine_dir),
-            new_hash="N/A",
+            path_before=quarantine_dir,
+            path_after=quarantine_dir,
+            new_hash=None,
             note="CREATE_QUARANTINE_DIR failed: quarantine/ already exists",
         )
         print(f"quarantine/ already exists at {quarantine_dir}")
@@ -87,9 +87,9 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
         print("quarantine/ created.")
         logger._write_log_entry(
             action_type="CREATE_QUARANTINE_DIR",
-            path_before="N/A",
-            new_hash="N/A",
-            path_after=os.path.abspath(quarantine_dir),
+            path_before=None,
+            new_hash=None,
+            path_after=quarantine_dir.resolve(),
             note="",
         )
         print(f"quarantine/ created at {quarantine_dir}")
@@ -102,8 +102,8 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
     if metadata_temp.exists():
         logger._write_log_entry(
             action_type="ERROR",
-            path_before=str(metadata_temp),
-            path_after=os.path.abspath(metadata_temp),
+            path_before=metadata_temp,
+            path_after=metadata_temp,
             note="CREATE_METADATA_TEMPLATE failed: metadata.json already exists",
         )
         print(f"metadata.json already exists at {metadata_temp}")
@@ -113,8 +113,8 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
 
         logger._write_log_entry(
             action_type="CREATE_METADATA_TEMPLATE",
-            path_before=str(metadata_temp),
-            path_after=os.path.abspath(metadata_temp),
+            path_before=metadata_temp,
+            path_after=metadata_temp.resolve(),
             note="",
         )
         print(f"metadata.json created at {metadata_temp}")

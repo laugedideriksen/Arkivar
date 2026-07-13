@@ -17,7 +17,7 @@ from pprint import pprint
 def stage(data_source: FileState, logger: LogWriter, dest_path: Path) -> FileState:
     """Move file to staging/."""
     filename = os.path.basename(data_source.source_path)
-    target_path = os.path.join(dest_path, filename)
+    target_path = dest_path / filename
 
     success, msg = run_rsync(data_source.source_path, target_path)
 
@@ -60,7 +60,7 @@ def quarantine(
         return data_source
 
     filename = os.path.basename(data_source.current_path)
-    target_path = os.path.join(quarantine_dir, filename)
+    target_path = quarantine_dir / filename
 
     try:
         os.rename(data_source.current_path, target_path)
@@ -131,8 +131,8 @@ def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
 
         logger._write_log_entry(
             action_type="CLEAN_PROJECT_METADATA",
-            path_before=str(metadata_file),
-            path_after=str(metadata_file),
+            path_before=metadata_file,
+            path_after=metadata_file,
         )
 
         print("metadata.json has been cleaned")
@@ -177,5 +177,5 @@ def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState
 def finalise(logger: LogWriter) -> None:
     # TODO: calculate checksum of changelog.
     log_file = logger.log_file
-    logger._calculate_sha256(os.path.abspath(log_file))
+    logger._calculate_sha256(log_file.resolve())
     pass

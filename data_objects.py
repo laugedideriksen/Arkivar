@@ -7,8 +7,8 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class FileState:
-    source_path: str|Path
-    current_path: str|Path
+    source_path: Path
+    current_path: Path
     base_name: str
     uri: str = field(default_factory=lambda: str(uuid4()))
     current_hash: Optional[str] = None
@@ -17,7 +17,8 @@ class FileState:
     status: str = "NEW"
 
 
-def create_filestate(source_path: str) -> FileState:
+def create_filestate(source_path: Path) -> FileState:
+    source_path = source_path
     file_name = os.path.basename(source_path)
     return FileState(
         source_path, current_path=source_path, base_name=file_name, status="NEW"

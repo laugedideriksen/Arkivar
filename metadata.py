@@ -19,7 +19,6 @@ TECHNICAL_FIELD_MAP = {
     "Camera Model Name": EXIF.model,
     "Image Width": EXIF.pixelXDimension,
     "Image Height": EXIF.pixelYDimension,
-
     # NFO—cross-format namespace for technical properties
     "Page Count": NFO.pageCount,
     "File:WordCount": NFO.wordCount,
@@ -29,7 +28,9 @@ TECHNICAL_FIELD_MAP = {
 }
 
 
-def build_sidecar_graph(data_source: FileState, dc_fields: dict, technical_information: dict) -> Graph:
+def build_sidecar_graph(
+    data_source: FileState, dc_fields: dict, technical_information: dict
+) -> Graph:
     g = Graph()
     g.bind("dcterms", DCTERMS)
     g.bind("exif", EXIF)
@@ -49,7 +50,13 @@ def build_sidecar_graph(data_source: FileState, dc_fields: dict, technical_infor
 
     return g
 
-def write_sidecar(data_source: FileState, logger: LogWriter, dc_fields: dict, technical_information: dict) -> None:
+
+def write_sidecar(
+    data_source: FileState,
+    logger: LogWriter,
+    dc_fields: dict,
+    technical_information: dict,
+) -> None:
     g = build_sidecar_graph(data_source, dc_fields, technical_information)
 
     data_source_path = Path(data_source.current_path)
@@ -57,34 +64,8 @@ def write_sidecar(data_source: FileState, logger: LogWriter, dc_fields: dict, te
     g.serialize(destination=str(sidecar_path), format="pretty-xml")
 
     logger._write_log_entry(
-            action_type="CREATE_SIDECAR",
-            path_before="N/A",
-            path_after=sidecar_path,
-            note="")
-
-    logger._write_log_entry(
-        action_type="CREATE_SIDECAR",
-        path_before="N/A",
-        path_after=str(sidecar_path),
-        note="",
+        action_type="CREATE_SIDECAR", path_before=None, path_after=sidecar_path, note=""
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def dc_template() -> dict:

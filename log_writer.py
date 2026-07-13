@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from hashlib import sha256
 from data_objects import FileState
+from typing import Optional
 from dataclasses import replace
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from pathlib import Path
 class LogWriter:
     def __init__(
         self,
-        log_file: str | Path = "changelog.csv",
+        log_file: Path = Path("changelog.csv"),
         dt_format: str = "%Y%m%d-%H:%M:%S.%f",
     ) -> None:
         self.log_file = log_file
@@ -29,7 +30,7 @@ class LogWriter:
                 f"{os.getcwd()} doesn't seem to be initialised. Please run arkivar init."
             )
 
-    def _calculate_sha256(self, file_path: str) -> str:
+    def _calculate_sha256(self, file_path: Path) -> str:
         if not os.path.exists(file_path):
             return f"FILE_MISSING: {file_path}"
         h = sha256()
@@ -42,7 +43,7 @@ class LogWriter:
         self,
         state: "FileState",
         action: str,
-        path_after_action: str,
+        path_after_action: Path,
         note: str = "",
         meta_data: dict | None = None,
     ) -> "FileState":
@@ -98,10 +99,10 @@ class LogWriter:
     def _write_log_entry(
         self,
         action_type: str,
-        path_before: str|Path,
-        path_after: str|Path,
-        hash_before: str = "N/A",
-        new_hash: str = "",
+        path_before: Path | None,
+        path_after: Path,
+        hash_before: str | None = None,
+        new_hash: str | None = None,
         note: str = "",
     ) -> None:
 
@@ -110,16 +111,16 @@ class LogWriter:
         with open(self.log_file, mode="a", newline="") as f:
             writer = csv.writer(f)
 
-            if not new_hash == "N/A":
-                new_hash = self._calculate_sha256(str(path_after))
+            if new_hash is None:
+                new_hash = self._calculate_sha256(path_after)
 
             writer.writerow(
                 [
                     datetime.now().strftime(self.dt_format),
                     action_type,
-                    path_before,
+                    str(path_before) if path_before is not None else "N/A",
                     path_after,
-                    hash_before,
+                    str(hash_before) if hash_before is not None else "N/A",
                     new_hash,
                     note,
                 ]

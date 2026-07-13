@@ -4,10 +4,11 @@ import puremagic
 from data_objects import FileState
 import subprocess
 from typing import Any
+from pathlib import Path
 
 
 def validate_file(file_state: FileState) -> bool:
-    file_path = file_state.current_path
+    file_path = str(file_state.current_path)
     magic = puremagic.from_file(file_path).lstrip(".")
     extension = file_path.rsplit(".", 1)[-1].lstrip(".")
 
@@ -17,15 +18,17 @@ def validate_file(file_state: FileState) -> bool:
         case _:
             pass
 
-    return magic == extension
+    return magic.lower() == extension.lower()
 
 
-def run_rsync(source: str, destination: str, dry_run: bool = False) -> tuple[bool, str]:
+def run_rsync(
+    source: Path, destination: Path, dry_run: bool = False
+) -> tuple[bool, str]:
     flags = ["-ca", "--itemize-changes"]  # TODO: check with my earlier version
     if dry_run:
         flags.append("-n")
 
-    cmd = ["rsync"] + flags + [source, destination]
+    cmd = ["rsync"] + flags + [str(source), str(destination)]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf8")
         return (res.returncode == 0, res.stdout)
@@ -33,7 +36,7 @@ def run_rsync(source: str, destination: str, dry_run: bool = False) -> tuple[boo
         return (False, str(e))
 
 
-def run_exiftool(file_path) -> tuple[bool, Any]:
+def run_exiftool(file_path: Path) -> tuple[bool, Any]:
     cmd = ["exiftool", "-j", "-n", "-G", "-api", "LargeFileSupport=1", file_path]
     try:
         res = subprocess.run(
@@ -43,13 +46,6 @@ def run_exiftool(file_path) -> tuple[bool, Any]:
         return (res.returncode == 0, data[0]) if data else (res.returncode == 0, {})
     except subprocess.CalledProcessError as e:
         return (False, str(e))
-
-
-def create_filestate(source_path: str) -> FileState:
-    file_name = os.path.basename(source_path)
-    return FileState(
-        source_path, current_path=source_path, base_name=file_name, status="NEW"
-    )
 
 
 def dc_template() -> dict:
