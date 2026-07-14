@@ -1,15 +1,17 @@
 import os
 import arkivar
-import log_writer
+from log_writer import LogWriter
 from data_objects import FileState, create_filestate
 from init_dir import init_dir
-from pathlib import Path
+from pathlib import Path, PurePath
 
 
 def _ingest_file(
-    source_path: Path, project_path: Path, logger: log_writer.LogWriter
+    source: FileState | Path, project_path: Path, logger: LogWriter
 ) -> None:
-    data_source = create_filestate(source_path)
+    if isinstance(source, PurePath):
+        data_source = create_filestate(source)
+
     staging_dir = project_path / "staging"
     quarantine_dir = project_path / "quarantine"
 
@@ -28,21 +30,20 @@ def _ingest_file(
     # state = arkivar.organise(state, logger)
     # arkivar.finalise(logger)
 
-    pass
+
+def _ingest_directory(source_path: str | Path, project_path: Path, logger: LogWriter) -> None:
+    ingestion_root = Path(source_path).resolve()
+    for file_path in ingestion_root.rglob("*"):
+        if file_path.is_file():
+            relative_path = file_path.relative_to(ingestion_root).parent
+            data_source = create_filestate(file_path, relative_path)
+            _ingest_file(data_source, project_path, logger)
 
 
-def ingest_directory(source_path: str) -> None:
-    # walk tree and add all files to data_sources
-    data_sources = []
-
-    for data_source in data_sources:
-        pass
-
-
-def ingest(source_path: str | Path, project_path: str | Path):
+def ingest(source_path: str | Path, project_path: str | Path) -> None:
     source_path = Path(source_path).resolve()
     project_path = Path(project_path).resolve()
-    logger = log_writer.LogWriter(project_path / "changelog.csv")
+    logger = LogWriter(project_path / "changelog.csv")
     # TODO: add ensure init
 
     arkivar.clean_project_metadata(project_path, logger)
@@ -51,9 +52,10 @@ def ingest(source_path: str | Path, project_path: str | Path):
         print(f"INGEST FAILED: {source_path} does not exist")
     elif os.path.isfile(source_path):
         _ingest_file(source_path, project_path, logger)
-        pass
+    elif os.path.isdir(source_path):
+        _ingest_directory(source_path, project_path, logger)
 
 
 if __name__ == "__main__":
     # init_dir("testdir")
-    ingest("testfile.pdf", "testdir")
+    ingest("testfile.md", "testdir")

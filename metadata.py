@@ -1,36 +1,216 @@
-import re
+from datetime import datetime
 from uuid import uuid4
 from rdflib import Graph, Namespace, Literal, URIRef
 from rdflib.namespace import DCTERMS
 from pathlib import Path
-from data_objects import FileState
+from data_objects import FileState, FieldDefinition, Target
 from log_writer import LogWriter
+from typing import Optional
 
 EXIF = Namespace("http://www.w3.org/2003/12/exif/ns#")
 NFO = Namespace("http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#")
+ARKIVAR = Namespace("fallback-namespace-for-this-application")
 
-TECHNICAL_FIELD_MAP = {
-    # EXIF—camera/image specific namespace
-    "Exposure Time": EXIF.exposureTime,
-    "F Number": EXIF.fNumber,
-    "ISO": EXIF.isoSpeedRatings,
-    "Focal Length In 35mm Format": EXIF.focalLengthIn35mmFilm,
-    "Make": EXIF.make,
-    "Camera Model Name": EXIF.model,
-    "Image Width": EXIF.pixelXDimension,
-    "Image Height": EXIF.pixelYDimension,
-    # NFO—cross-format namespace for technical properties
-    "Page Count": NFO.pageCount,
-    "File:WordCount": NFO.wordCount,
-    "Duration": NFO.duration,
-    "Sample Rate": NFO.sampleRate,
-    "Num Channels": NFO.channels,
+
+def _parse_exif_datetime(value: str) -> str:
+    return datetime.strptime(value, "%Y:%m:%d %H:%M:%S").date().isoformat()
+
+
+def _to_int(value: str | int | float) -> Optional[int]:
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return None
+
+# not currently in use, but added to support future functionality.
+def _to_float(value: str | int | float) -> Optional[float]:
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+
+FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
+
+    # --- shared across (almost) everything ---
+    "common": [
+        FieldDefinition("File Name", Target.DUBLIN_CORE, "titles"),
+        FieldDefinition("File Type", Target.DUBLIN_CORE, "formats"),
+    ],
+    "file_stats": [
+        FieldDefinition("File Size", Target.TECHNICAL, "fileSize", namespace=ARKIVAR, transform=_to_int),
+    ],
+
+    # --- images ---
+    "image_dimensions": [
+        FieldDefinition("Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int),
+        FieldDefinition("Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int),
+    ],
+    "camera": [  # EXIF-bearing images: JPEG, TIFF, most RAW, HEIC
+        FieldDefinition("Date/Time Original", Target.DUBLIN_CORE, "dates", transform=_parse_exif_datetime),
+        FieldDefinition("Artist", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("Exposure Time", Target.TECHNICAL, "exposureTime", namespace=EXIF),
+        FieldDefinition("F Number", Target.TECHNICAL, "fNumber", namespace=EXIF),
+        FieldDefinition("ISO", Target.TECHNICAL, "isoSpeedRatings", namespace=EXIF, transform=_to_int),
+        FieldDefinition("Focal Length In 35mm Format", Target.TECHNICAL, "focalLengthIn35mmFilm", namespace=EXIF, transform=_to_int),
+        FieldDefinition("Make", Target.TECHNICAL, "make", namespace=EXIF),
+        FieldDefinition("Camera Model Name", Target.TECHNICAL, "model", namespace=EXIF),
+        FieldDefinition("Lens Make", Target.TECHNICAL, "lensMake", namespace=ARKIVAR),
+        FieldDefinition("Lens Model", Target.TECHNICAL, "lensModel", namespace=ARKIVAR),
+    ],
+    "raw_image": [  # extra fields on top of "camera", for CR2/CR3/NEF/ARW/ORF/RAF/DNG
+        FieldDefinition("Bits Per Sample", Target.TECHNICAL, "colorDepth", namespace=NFO, transform=_to_int),
+        FieldDefinition("Color Space", Target.TECHNICAL, "colorSpace", namespace=ARKIVAR),
+        FieldDefinition("DNG Version", Target.TECHNICAL, "dngVersion", namespace=ARKIVAR),
+    ],
+    "lossless_image": [  # PNG, TIFF, BMP, WebP — format facts, no EXIF exposure data
+        FieldDefinition("Bit Depth", Target.TECHNICAL, "colorDepth", namespace=NFO, transform=_to_int),
+        FieldDefinition("Color Type", Target.TECHNICAL, "colorType", namespace=ARKIVAR),
+        FieldDefinition("Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR),
+    ],
+
+    # --- documents ---
+    "document": [
+        FieldDefinition("Creator", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("Producer", Target.TECHNICAL, "producer", namespace=ARKIVAR),
+        FieldDefinition("Creator Tool", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR),
+        FieldDefinition("Page Count", Target.TECHNICAL, "pageCount", namespace=NFO, transform=_to_int),
+        FieldDefinition("PDF Version", Target.TECHNICAL, "pdfVersion", namespace=ARKIVAR),
+    ],
+    "office_document": [  # DOCX, ODT, RTF
+        FieldDefinition("Author", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("Page Count", Target.TECHNICAL, "pageCount", namespace=NFO, transform=_to_int),
+        FieldDefinition("Word Count", Target.TECHNICAL, "wordCount", namespace=NFO, transform=_to_int),
+        FieldDefinition("Character Count", Target.TECHNICAL, "characterCount", namespace=NFO, transform=_to_int),
+        FieldDefinition("Application", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR),
+    ],
+    "plain_text": [
+        FieldDefinition("File:MIMEEncoding", Target.TECHNICAL, "characterEncoding", namespace=ARKIVAR),
+        FieldDefinition("File:WordCount", Target.TECHNICAL, "wordCount", namespace=NFO, transform=_to_int),
+    ],
+    "structured_text": [  # CSV, JSON, XML, HTML — usually just basic file facts
+        FieldDefinition("File:MIMEEncoding", Target.TECHNICAL, "characterEncoding", namespace=ARKIVAR),
+    ],
+
+    # --- audio ---
+    "audio_descriptive": [  # ID3-style tags — about the content, not the encoding
+        FieldDefinition("Title", Target.DUBLIN_CORE, "titles"),
+        FieldDefinition("Artist", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("Album", Target.DUBLIN_CORE, "relations"),
+        FieldDefinition("Year", Target.DUBLIN_CORE, "dates"),
+        FieldDefinition("Genre", Target.DUBLIN_CORE, "subject"),
+    ],
+    "audio_technical": [  # shared by lossy and lossless
+        FieldDefinition("Duration", Target.TECHNICAL, "duration", namespace=NFO),
+        FieldDefinition("Sample Rate", Target.TECHNICAL, "sampleRate", namespace=NFO, transform=_to_int),
+        FieldDefinition("Num Channels", Target.TECHNICAL, "channels", namespace=NFO, transform=_to_int),
+        FieldDefinition("Bits Per Sample", Target.TECHNICAL, "bitsPerSample", namespace=ARKIVAR, transform=_to_int),
+    ],
+    "audio_lossy": [  # MP3, AAC, OGG, M4A — extra fields for compressed audio
+        FieldDefinition("Audio Bitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
+        FieldDefinition("Encoder", Target.TECHNICAL, "encoder", namespace=ARKIVAR),
+    ],
+
+    # --- video --- (field names least verified — check against your own files)
+    "video_technical": [
+        FieldDefinition("Duration", Target.TECHNICAL, "duration", namespace=NFO),
+        FieldDefinition("Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int),
+        FieldDefinition("Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int),
+        FieldDefinition("Video Frame Rate", Target.TECHNICAL, "frameRate", namespace=ARKIVAR),
+        FieldDefinition("Compressor ID", Target.TECHNICAL, "videoCodec", namespace=ARKIVAR),
+        FieldDefinition("Audio Format", Target.TECHNICAL, "audioCodec", namespace=ARKIVAR),
+        FieldDefinition("Avg Bitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
+    ],
+}
+
+FILETYPE_GROUPS: dict[str, list[str]] = {
+    # images: standard/lossy
+    ".jpg":  ["common", "file_stats", "image_dimensions", "camera"],
+    ".jpeg": ["common", "file_stats", "image_dimensions", "camera"],
+    ".heic": ["common", "file_stats", "image_dimensions", "camera"],
+
+    # images: lossless
+    ".png":  ["common", "file_stats", "image_dimensions", "lossless_image"],
+    ".tif":  ["common", "file_stats", "image_dimensions", "camera", "lossless_image"],
+    ".tiff": ["common", "file_stats", "image_dimensions", "camera", "lossless_image"],
+    ".bmp":  ["common", "file_stats", "image_dimensions", "lossless_image"],
+    ".webp": ["common", "file_stats", "image_dimensions", "lossless_image"],
+    ".gif":  ["common", "file_stats", "image_dimensions"],
+
+    # images: RAW
+    ".cr2": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
+    ".cr3": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
+    ".nef": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
+    ".arw": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
+    ".orf": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
+    ".raf": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
+    ".dng": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
+
+    # documents
+    ".pdf":  ["common", "file_stats", "document"],
+    ".docx": ["common", "file_stats", "office_document"],
+    ".odt":  ["common", "file_stats", "office_document"],
+    ".rtf":  ["common", "file_stats", "office_document"],
+
+    # text
+    ".txt":  ["common", "file_stats", "plain_text"],
+    ".md":   ["common", "file_stats", "plain_text"],
+    ".csv":  ["common", "file_stats", "structured_text"],
+    ".json": ["common", "file_stats", "structured_text"],
+    ".xml":  ["common", "file_stats", "structured_text"],
+    ".html": ["common", "file_stats", "structured_text"],
+
+    # audio: lossy
+    ".mp3": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
+    ".m4a": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
+    ".aac": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
+    ".ogg": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
+
+    # audio: lossless
+    ".wav":  ["common", "file_stats", "audio_technical"],
+    ".flac": ["common", "file_stats", "audio_descriptive", "audio_technical"],
+    ".aiff": ["common", "file_stats", "audio_technical"],
+    ".aif":  ["common", "file_stats", "audio_technical"],
+
+    # video
+    ".mp4":  ["common", "file_stats", "video_technical"],
+    ".mov":  ["common", "file_stats", "video_technical"],
+    ".mkv":  ["common", "file_stats", "video_technical"],
+    ".avi":  ["common", "file_stats", "video_technical"],
+    ".webm": ["common", "file_stats", "video_technical"],
 }
 
 
+def exiftool_fields_for(suffix: str) -> list[str]:
+    """Replaces type_specific_metadata() — what to request from exiftool."""
+    if suffix not in FILETYPE_GROUPS:
+        raise ValueError(f"No field mapping registered for {suffix!r}")
+    return [fd.exif_field for group in FILETYPE_GROUPS[suffix] for fd in FIELD_REGISTRY[group]]
+
+
+def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
+    dc = dict(project_metadata)
+    technical = {}
+
+    for group in FILETYPE_GROUPS[suffix]:
+        for file_definition in FIELD_REGISTRY[group]:
+            raw_exif_value = exif_data.get(file_definition.exif_field)
+            if raw_exif_value is None:
+                continue
+            value = file_definition.transform(raw_exif_value) if file_definition.transform else raw_exif_value
+            if value is None:
+                continue
+
+            if file_definition.target is Target.DUBLIN_CORE:
+                dc[file_definition.key] = [str(value)]
+            else:
+                technical[(file_definition.namespace, file_definition.key)] = value
+
+    return {"dublin_core": dc, "technical_information": technical}
+
+
 def build_sidecar_graph(
-    data_source: FileState, dc_fields: dict, technical_information: dict
-) -> Graph:
+        data_source: FileState, sidecar: dict) -> Graph:
     g = Graph()
     g.bind("dcterms", DCTERMS)
     g.bind("exif", EXIF)
@@ -38,26 +218,24 @@ def build_sidecar_graph(
 
     subject = URIRef(f"urn:uuid:{data_source.uri}")
 
-    for field_name, values in dc_fields.items():
-        predicate = DCTERMS[field_name.rstrip("s")]
+    for key, values in sidecar["dublin_core"].items():
+        predicate = DCTERMS[key.rstrip("s")]
         for value in values:
             if value:
                 g.add((subject, predicate, Literal(value)))
 
-    for field_name, value in technical_information.items():
-        predicate = TECHNICAL_FIELD_MAP[field_name]
-        g.add((subject, predicate, Literal(value)))
-
+    for (namespace, local_name), value in sidecar["technical_information"].items():
+        g.add((subject, namespace[local_name], Literal(value)))
+    
     return g
 
 
 def write_sidecar(
     data_source: FileState,
     logger: LogWriter,
-    dc_fields: dict,
-    technical_information: dict,
+    sidecar: dict,
 ) -> None:
-    g = build_sidecar_graph(data_source, dc_fields, technical_information)
+    g = build_sidecar_graph(data_source, sidecar)
 
     data_source_path = Path(data_source.current_path)
     sidecar_path = data_source_path.with_suffix(data_source_path.suffix + ".rdf.xml")
@@ -100,63 +278,3 @@ def dc_template() -> dict:
         titles=["A name given to the resource."],
         types=["The nature or genre of the resource."],
     )
-
-
-def metadata_map() -> dict:
-    """Returns a dictionary mapping exiftool entries to Dublin Core fields."""
-    return {
-        "File Name": "titles",
-        "Date/Time Original": "dates",
-        "File Type": "types",
-        "Artist": "creator",
-        "Author": "creator",
-        "Image Description": "description",
-        "Description": "description",
-    }
-
-
-def type_specific_metadata(suffix) -> dict:
-    """Returns a list of exiftool entries for specific file types."""
-    entries = {
-        ".jpg": ["File Size", "Image Width", "Image Height"],
-        "exposure": [
-            "Exposure Time",
-            "F Number",
-            "ISO",
-            "Focal Length In 35mm Format",
-        ],
-        "camera": ["Make", "Camera Model Name", "Lens Make", "Lens Model"],
-        ".pdf": [
-            "File Size",
-            "PDF Version",
-            "Page Count",
-            "Creator",
-            "Producer",
-            "Creator Tool",
-        ],
-        ".wav": ["File Size", "Duration", "Sample Rate", "Num Channels"],
-        ".mp3": [
-            "File Size",
-            "Duration",
-            "Title",
-            "Album",
-            "Year",
-            "Artist",
-            "Band",
-            "Track",
-            "Media",
-        ],
-        ".txt": ["File:WordCount", "File:MIMEEncoding"],
-    }
-
-    filetype_map = {
-        ".jpg": {
-            "file": entries[".jpg"],
-            "exposure": entries["exposure"],
-            "camera": entries["camera"],
-        },
-        ".txt": {"file": entries[".txt"]},
-        ".md": {"file": entries[".txt"]},
-    }
-
-    return filetype_map[suffix]

@@ -14,10 +14,11 @@ from pathlib import Path
 from pprint import pprint
 
 
-def stage(data_source: FileState, logger: LogWriter, dest_path: Path) -> FileState:
+def stage(data_source: FileState, logger: LogWriter, staging_dir: Path) -> FileState:
     """Move file to staging/."""
-    filename = os.path.basename(data_source.source_path)
-    target_path = dest_path / filename
+    target_dir = staging_dir / data_source.relative_source_path
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_path = target_dir / data_source.base_name
 
     success, msg = run_rsync(data_source.source_path, target_path)
 
@@ -154,13 +155,11 @@ def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState
     filetype_metadata = type_specific_metadata(object_path.suffix)
 
     # Create metadata template for data_source based on project metadata, and exif fields specific to its filetype
-    for k, v in filetype_metadata.items():
-        object_metadata_template = project_metadata | {k: v}
+    object_metadata_template = project_metadata | {k: v}
 
     # TODO: iterate over object_metadata_template and replace existing values with values from data_source.metadata, if present. Use metadata_map to translate naming conventions.
     # TODO: Might make more sense to insert values to filetype metadata and only then replace in/add to object metadata?
 
-    pprint(object_metadata_template, sort_dicts=False)
     return data_source
 
 
