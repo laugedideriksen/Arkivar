@@ -4,14 +4,13 @@ from utils import (
     run_rsync,
     validate_file,
     run_exiftool,
-    dc_template,
 )
 from metadata import (
-        exiftool_fields_for,
-        build_sidecar,
-        write_sidecar,
-        validate_sidecar,
-        )
+    exiftool_fields_for,
+    build_sidecar,
+    write_sidecar,
+    dc_template,
+)
 import os
 import json
 from pathlib import Path
@@ -63,23 +62,24 @@ def quarantine(
     if data_source.status != "VALIDATION_FAILED":
         return data_source
 
-    filename = os.path.basename(data_source.current_path)
+    filename = data_source.base_name
     target_path = quarantine_dir / filename
 
-    try:
-        os.rename(data_source.current_path, target_path)
+    success, msg = run_rsync(data_source.current_path, target_path)
+
+    if success:
         return logger.change_state(
             data_source,
             "QUARANTINE_FILE",
             target_path,
             note="Moved due to validation error",
         )
-    except Exception as e:
+    else:
         return logger.change_state(
             data_source,
             "ERROR",
             data_source.current_path,
-            note=f"Quarantine move failed: {e}",
+            note=f"Quarantine move failed: {msg}",
         )
 
 
@@ -92,7 +92,9 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
     try:
         fields = exiftool_fields_for(suffix)
     except ValueError as e:
-        return logger.change_state(data_source, "ERROR", data_source.current_path, note=str(e))
+        return logger.change_state(
+            data_source, "ERROR", data_source.current_path, note=str(e)
+        )
 
     success, output = run_exiftool(data_source.current_path, fields)
 
@@ -147,7 +149,10 @@ def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
     except Exception as e:
         raise e
 
-def create_sidecar_file(data_source: FileState, logger: LogWriter, project_path: Path) -> FileState:
+
+def create_sidecar_file(
+    data_source: FileState, logger: LogWriter, project_path: Path
+) -> FileState:
     suffix = data_source.current_path.suffix
     exif_data = data_source.metadata
     metadata_file = project_path / "metadata.json"
@@ -157,50 +162,61 @@ def create_sidecar_file(data_source: FileState, logger: LogWriter, project_path:
     data_source = write_sidecar(data_source, logger, sidecar_dict)
     return data_source
 
-def organise(project_path: Path, data_source: FileState, logger: LogWriter) -> FileState:
-   """Move files to bag folders"""
-   data_dir = project_path / "data"
-   target_dir = data_dir / data_source.relative_source_path
-   target_dir.mkdir(parents=True, exist_ok=True)
-   file_target = target_dir / data_source.base_name
-   sidecar_target = target_dir / data_source.sidecar_path.name
 
-   staged_file_path = data_source.current_path
-   staged_sidecar_path = data_source.sidecar_path
-   
-   success, msg = run_rsync(data_source.current_path, file_target)
+def organise(
+    project_path: Path, data_source: FileState, logger: LogWriter
+) -> FileState:
+    """Move files to data/"""
+    data_dir = project_path / "data"
+    target_dir = data_dir / data_source.relative_source_path
+    target_dir.mkdir(parents=True, exist_ok=True)
+    file_target = target_dir / data_source.base_name
+    sidecar_target = target_dir / data_source.sidecar_path.name
 
-   if success:
-       sidecar_success, sidecar_msg = run_rsync(data_source.sidecar_path, sidecar_target)
-       if sidecar_success:
-           staged_file_path.unlink()
-           staged_sidecar_path.unlink()
-           logger._write_log_entry(
-                   action_type="SIDECAR_MOVED",
-                   path_before=data_source.sidecar_path,
-                   path_after=sidecar_target,
-                   note=f"Rsync OK: {sidecar_msg}"
-                   )
-           return logger.change_state(
-                   data_source, "MOVE_FILE", file_target, sidecar_path=sidecar_target, note=f"Rsync OK: {msg}"
-                   )
-       else:
-           return logger.change_state(
-                   data_source, "ERROR", data_source.current_path, note=f"Rsync FAILED on sidecar: {sidecar_msg}"
-                   )
-   else:
-       return logger.change_state(
-               data_source, "ERROR", data_source.current_path, note=f"Rsync FAIL: {msg}"
-               )
+    staged_file_path = data_source.current_path
+    staged_sidecar_path = data_source.sidecar_path
+
+    success, msg = run_rsync(data_source.current_path, file_target)
+
+    if success:
+        staged_file_path.unlink()
+        sidecar_success, sidecar_msg = run_rsync(
+            data_source.sidecar_path, sidecar_target
+        )
+        if sidecar_success:
+            staged_sidecar_path.unlink()
+            logger._write_log_entry(
+                action_type="SIDECAR_MOVED",
+                path_before=data_source.sidecar_path,
+                path_after=sidecar_target,
+                note=f"Rsync OK: {sidecar_msg}",
+            )
+            return logger.change_state(
+                data_source,
+                "MOVE_FILE",
+                file_target,
+                sidecar_path=sidecar_target,
+                note=f"Rsync OK: {msg}",
+            )
+        else:
+            return logger.change_state(
+                data_source,
+                "ERROR",
+                data_source.current_path,
+                note=f"Rsync FAILED on sidecar: {sidecar_msg}",
+            )
+    else:
+        return logger.change_state(
+            data_source, "ERROR", data_source.current_path, note=f"Rsync FAIL: {msg}"
+        )
+
 
 def finalise(logger: LogWriter) -> None:
-    # TODO: calculate checksum of changelog.
     log_file = logger.log_file
-    logger._calculate_sha256(log_file.resolve())
-
     logger._write_log_entry(
-            action_type="CLOSE_CHANGELOG",
-            path_before=log_file,
-            path_after=log_file,
-            note="Ingestion finished. To verify new changelog checksum, first remove this row.")
+        action_type="CLOSE_CHANGELOG",
+        path_before=log_file,
+        path_after=log_file,
+        note="Ingestion finished. To verify new changelog checksum, first remove this row.",
+    )
     pass

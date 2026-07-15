@@ -74,14 +74,13 @@ class LogWriter:
             "VALIDATION_FAILED": "VALIDATION_FAILED",
             "QUARANTINE_FILE": "QUARANTINED",
             "ERROR": "ERROR",
-            "MOVE": "MOVED",
+            "MOVE_FILE": "FILE_MOVED",
             "METADATA_EXTRACT": "METADATA_EXTRACTED",
             "STAGE_FILE": "FILE_STAGED",
             "CREATE_SIDECAR": "SIDECAR_CREATED",
         }
         new_status = status_map.get(action, state.status)
-
-        if meta_data:
+        if meta_data is not None:
             return replace(
                 state,
                 current_path=path_after_action,
@@ -89,7 +88,7 @@ class LogWriter:
                 status=new_status,
                 metadata=meta_data,
             )
-        elif sidecar_path:
+        elif sidecar_path is not None:
             return replace(
                 state,
                 current_path=path_after_action,
@@ -99,11 +98,11 @@ class LogWriter:
             )
         else:
             return replace(
-                    state,
-                    current_path=path_after_action,
-                    current_hash=hash_after_action,
-                    status=new_status,
-                    )
+                state,
+                current_path=path_after_action,
+                current_hash=hash_after_action,
+                status=new_status,
+            )
 
     def _write_log_entry(
         self,

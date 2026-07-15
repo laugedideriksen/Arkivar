@@ -3,13 +3,29 @@ from uuid import uuid4
 from rdflib import Graph, Namespace, Literal, URIRef
 from rdflib.namespace import DCTERMS
 from pathlib import Path
-from data_objects import FileState, FieldDefinition, Target
+from data_objects import FileState
 from log_writer import LogWriter
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Any, Callable
+from enum import Enum
 
 EXIF = Namespace("http://www.w3.org/2003/12/exif/ns#")
 NFO = Namespace("http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#")
 ARKIVAR = Namespace("https://arkivar.example/ns/technical#")
+
+
+class Target(Enum):
+    DUBLIN_CORE = "dublin_core"
+    TECHNICAL = "technical"
+
+
+@dataclass(frozen=True)
+class FieldDefinition:
+    exif_field: str  # exiftool's field name, e.g. "Date/Time Original"
+    target: Target
+    key: str  # DC key or technical predicate local name
+    namespace: Optional[Namespace] = None  # only used when target is TECHNICAL
+    transform: Optional[Callable[[str], Any]] = None  # optional value normalizer
 
 
 def _parse_exif_datetime(value: str) -> str:
@@ -19,125 +35,248 @@ def _parse_exif_datetime(value: str) -> str:
 def _to_int(value: str | int | float) -> Optional[int]:
     try:
         return int(float(value))
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
+
 
 # not currently in use, but added to support future functionality.
 def _to_float(value: str | int | float) -> Optional[float]:
     try:
         return float(value)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
 
 
 FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
-
     # --- shared across (almost) everything ---
     "common": [
-        FieldDefinition("File:FileName", Target.DUBLIN_CORE, "titles"),#TODO The issue seems to be that there is a type tag in front (e.g. File:)
+        FieldDefinition(
+            "File:FileName", Target.DUBLIN_CORE, "titles"
+        ),  # TODO The issue seems to be that there is a type tag in front (e.g. File:)
         FieldDefinition("File:FileType", Target.DUBLIN_CORE, "formats"),
     ],
     "file_stats": [
-        FieldDefinition("File:FileSize", Target.TECHNICAL, "fileSize", namespace=ARKIVAR, transform=_to_int),
+        FieldDefinition(
+            "File:FileSize",
+            Target.TECHNICAL,
+            "fileSize",
+            namespace=ARKIVAR,
+            transform=_to_int,
+        ),
     ],
-
     # --- images ---
     "image_dimensions": [
-        FieldDefinition("Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int),
-        FieldDefinition("Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int),
+        FieldDefinition(
+            "Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int
+        ),
+        FieldDefinition(
+            "Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int
+        ),
     ],
     "camera": [  # EXIF-bearing images: JPEG, TIFF, most RAW, HEIC
-        FieldDefinition("Date/Time Original", Target.DUBLIN_CORE, "dates", transform=_parse_exif_datetime),
+        FieldDefinition(
+            "Date/Time Original",
+            Target.DUBLIN_CORE,
+            "dates",
+            transform=_parse_exif_datetime,
+        ),
         FieldDefinition("Artist", Target.DUBLIN_CORE, "creators"),
-        FieldDefinition("Exposure Time", Target.TECHNICAL, "exposureTime", namespace=EXIF),
+        FieldDefinition(
+            "Exposure Time", Target.TECHNICAL, "exposureTime", namespace=EXIF
+        ),
         FieldDefinition("F Number", Target.TECHNICAL, "fNumber", namespace=EXIF),
-        FieldDefinition("ISO", Target.TECHNICAL, "isoSpeedRatings", namespace=EXIF, transform=_to_int),
-        FieldDefinition("Focal Length In 35mm Format", Target.TECHNICAL, "focalLengthIn35mmFilm", namespace=EXIF, transform=_to_int),
+        FieldDefinition(
+            "ISO",
+            Target.TECHNICAL,
+            "isoSpeedRatings",
+            namespace=EXIF,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "Focal Length In 35mm Format",
+            Target.TECHNICAL,
+            "focalLengthIn35mmFilm",
+            namespace=EXIF,
+            transform=_to_int,
+        ),
         FieldDefinition("Make", Target.TECHNICAL, "make", namespace=EXIF),
         FieldDefinition("Camera Model Name", Target.TECHNICAL, "model", namespace=EXIF),
         FieldDefinition("Lens Make", Target.TECHNICAL, "lensMake", namespace=ARKIVAR),
         FieldDefinition("Lens Model", Target.TECHNICAL, "lensModel", namespace=ARKIVAR),
     ],
     "raw_image": [  # extra fields on top of "camera", for CR2/CR3/NEF/ARW/ORF/RAF/DNG
-        FieldDefinition("Bits Per Sample", Target.TECHNICAL, "colorDepth", namespace=NFO, transform=_to_int),
-        FieldDefinition("Color Space", Target.TECHNICAL, "colorSpace", namespace=ARKIVAR),
-        FieldDefinition("DNG Version", Target.TECHNICAL, "dngVersion", namespace=ARKIVAR),
+        FieldDefinition(
+            "Bits Per Sample",
+            Target.TECHNICAL,
+            "colorDepth",
+            namespace=NFO,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "Color Space", Target.TECHNICAL, "colorSpace", namespace=ARKIVAR
+        ),
+        FieldDefinition(
+            "DNG Version", Target.TECHNICAL, "dngVersion", namespace=ARKIVAR
+        ),
     ],
     "lossless_image": [  # PNG, TIFF, BMP, WebP — format facts, no EXIF exposure data
-        FieldDefinition("Bit Depth", Target.TECHNICAL, "colorDepth", namespace=NFO, transform=_to_int),
+        FieldDefinition(
+            "Bit Depth",
+            Target.TECHNICAL,
+            "colorDepth",
+            namespace=NFO,
+            transform=_to_int,
+        ),
         FieldDefinition("Color Type", Target.TECHNICAL, "colorType", namespace=ARKIVAR),
-        FieldDefinition("Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR),
+        FieldDefinition(
+            "Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR
+        ),
     ],
-
     # --- documents ---
     "document": [
         FieldDefinition("PDF:Creator", Target.DUBLIN_CORE, "creators"),
-        FieldDefinition("XMP:Producer", Target.TECHNICAL, "producer", namespace=ARKIVAR),
-        FieldDefinition("XMP:CreatorTool", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR),
-        FieldDefinition("PDF:PageCount", Target.TECHNICAL, "pageCount", namespace=NFO, transform=_to_int),
-        FieldDefinition("PDF:PDFVersion", Target.TECHNICAL, "pdfVersion", namespace=ARKIVAR),
+        FieldDefinition(
+            "XMP:Producer", Target.TECHNICAL, "producer", namespace=ARKIVAR
+        ),
+        FieldDefinition(
+            "XMP:CreatorTool", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR
+        ),
+        FieldDefinition(
+            "PDF:PageCount",
+            Target.TECHNICAL,
+            "pageCount",
+            namespace=NFO,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "PDF:PDFVersion", Target.TECHNICAL, "pdfVersion", namespace=ARKIVAR
+        ),
     ],
     "office_document": [  # DOCX, ODT, RTF
         FieldDefinition("Author", Target.DUBLIN_CORE, "creators"),
-        FieldDefinition("Page Count", Target.TECHNICAL, "pageCount", namespace=NFO, transform=_to_int),
-        FieldDefinition("Word Count", Target.TECHNICAL, "wordCount", namespace=NFO, transform=_to_int),
-        FieldDefinition("Character Count", Target.TECHNICAL, "characterCount", namespace=NFO, transform=_to_int),
-        FieldDefinition("Application", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR),
+        FieldDefinition(
+            "Page Count",
+            Target.TECHNICAL,
+            "pageCount",
+            namespace=NFO,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "Word Count",
+            Target.TECHNICAL,
+            "wordCount",
+            namespace=NFO,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "Character Count",
+            Target.TECHNICAL,
+            "characterCount",
+            namespace=NFO,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "Application", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR
+        ),
     ],
     "plain_text": [
-        FieldDefinition("File:MIMEEncoding", Target.TECHNICAL, "characterEncoding", namespace=ARKIVAR),
-        FieldDefinition("File:WordCount", Target.TECHNICAL, "wordCount", namespace=NFO, transform=_to_int),
+        FieldDefinition(
+            "File:MIMEEncoding",
+            Target.TECHNICAL,
+            "characterEncoding",
+            namespace=ARKIVAR,
+        ),
+        FieldDefinition(
+            "File:WordCount",
+            Target.TECHNICAL,
+            "wordCount",
+            namespace=NFO,
+            transform=_to_int,
+        ),
     ],
     "structured_text": [  # CSV, JSON, XML, HTML — usually just basic file facts
-        FieldDefinition("File:MIMEEncoding", Target.TECHNICAL, "characterEncoding", namespace=ARKIVAR),
+        FieldDefinition(
+            "File:MIMEEncoding",
+            Target.TECHNICAL,
+            "characterEncoding",
+            namespace=ARKIVAR,
+        ),
     ],
-
     # --- audio ---
     "audio_descriptive": [  # ID3-style tags — about the content, not the encoding
-      FieldDefinition("ID:3Title", Target.DUBLIN_CORE, "titles"),
-      FieldDefinition("ID3:Artist", Target.DUBLIN_CORE, "creators"),
-      FieldDefinition("ID3:Album", Target.DUBLIN_CORE, "relations"),
-      FieldDefinition("ID3:Year", Target.DUBLIN_CORE, "dates"),
-      FieldDefinition("ID3:Genre", Target.DUBLIN_CORE, "subject"),
+        FieldDefinition("ID3:Title", Target.DUBLIN_CORE, "titles"),
+        FieldDefinition("ID3:Artist", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("ID3:Album", Target.DUBLIN_CORE, "relations"),
+        FieldDefinition("ID3:Year", Target.DUBLIN_CORE, "dates"),
+        FieldDefinition("ID3:Genre", Target.DUBLIN_CORE, "subject"),
     ],
     "audio_technical": [  # shared by lossy and lossless
-                        FieldDefinition("Composite:Duration", Target.TECHNICAL, "duration", namespace=NFO),
-        FieldDefinition("Sample Rate", Target.TECHNICAL, "sampleRate", namespace=NFO, transform=_to_int),
-        FieldDefinition("Num Channels", Target.TECHNICAL, "channels", namespace=NFO, transform=_to_int),
-        FieldDefinition("Bits Per Sample", Target.TECHNICAL, "bitsPerSample", namespace=ARKIVAR, transform=_to_int),
+        FieldDefinition(
+            "Composite:Duration", Target.TECHNICAL, "duration", namespace=NFO
+        ),
+        FieldDefinition(
+            "Sample Rate",
+            Target.TECHNICAL,
+            "sampleRate",
+            namespace=NFO,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "Num Channels",
+            Target.TECHNICAL,
+            "channels",
+            namespace=NFO,
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "Bits Per Sample",
+            Target.TECHNICAL,
+            "bitsPerSample",
+            namespace=ARKIVAR,
+            transform=_to_int,
+        ),
     ],
     "audio_lossy": [  # MP3, AAC, OGG, M4A — extra fields for compressed audio
-        FieldDefinition("MPEG:AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
+        FieldDefinition(
+            "MPEG:AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR
+        ),
         FieldDefinition("AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
         FieldDefinition("Encoder", Target.TECHNICAL, "encoder", namespace=ARKIVAR),
     ],
-
     # --- video --- (field names least verified — check against your own files)
     "video_technical": [
         FieldDefinition("Duration", Target.TECHNICAL, "duration", namespace=NFO),
-        FieldDefinition("Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int),
-        FieldDefinition("Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int),
-        FieldDefinition("Video Frame Rate", Target.TECHNICAL, "frameRate", namespace=ARKIVAR),
-        FieldDefinition("Compressor ID", Target.TECHNICAL, "videoCodec", namespace=ARKIVAR),
-        FieldDefinition("Audio Format", Target.TECHNICAL, "audioCodec", namespace=ARKIVAR),
+        FieldDefinition(
+            "Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int
+        ),
+        FieldDefinition(
+            "Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int
+        ),
+        FieldDefinition(
+            "Video Frame Rate", Target.TECHNICAL, "frameRate", namespace=ARKIVAR
+        ),
+        FieldDefinition(
+            "Compressor ID", Target.TECHNICAL, "videoCodec", namespace=ARKIVAR
+        ),
+        FieldDefinition(
+            "Audio Format", Target.TECHNICAL, "audioCodec", namespace=ARKIVAR
+        ),
         FieldDefinition("Avg Bitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
     ],
 }
 
 FILETYPE_GROUPS: dict[str, list[str]] = {
     # images: standard/lossy
-    ".jpg":  ["common", "file_stats", "image_dimensions", "camera"],
+    ".jpg": ["common", "file_stats", "image_dimensions", "camera"],
     ".jpeg": ["common", "file_stats", "image_dimensions", "camera"],
     ".heic": ["common", "file_stats", "image_dimensions", "camera"],
-
     # images: lossless
-    ".png":  ["common", "file_stats", "image_dimensions", "lossless_image"],
-    ".tif":  ["common", "file_stats", "image_dimensions", "camera", "lossless_image"],
+    ".png": ["common", "file_stats", "image_dimensions", "lossless_image"],
+    ".tif": ["common", "file_stats", "image_dimensions", "camera", "lossless_image"],
     ".tiff": ["common", "file_stats", "image_dimensions", "camera", "lossless_image"],
-    ".bmp":  ["common", "file_stats", "image_dimensions", "lossless_image"],
+    ".bmp": ["common", "file_stats", "image_dimensions", "lossless_image"],
     ".webp": ["common", "file_stats", "image_dimensions", "lossless_image"],
-    ".gif":  ["common", "file_stats", "image_dimensions"],
-
+    ".gif": ["common", "file_stats", "image_dimensions"],
     # images: RAW
     ".cr2": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
     ".cr3": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
@@ -146,38 +285,57 @@ FILETYPE_GROUPS: dict[str, list[str]] = {
     ".orf": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
     ".raf": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
     ".dng": ["common", "file_stats", "image_dimensions", "camera", "raw_image"],
-
     # documents
-    ".pdf":  ["common", "file_stats", "document"],
+    ".pdf": ["common", "file_stats", "document"],
     ".docx": ["common", "file_stats", "office_document"],
-    ".odt":  ["common", "file_stats", "office_document"],
-    ".rtf":  ["common", "file_stats", "office_document"],
-
+    ".odt": ["common", "file_stats", "office_document"],
+    ".rtf": ["common", "file_stats", "office_document"],
     # text
-    ".txt":  ["common", "file_stats", "plain_text"],
-    ".md":   ["common", "file_stats", "plain_text"],
-    ".csv":  ["common", "file_stats", "structured_text"],
+    ".txt": ["common", "file_stats", "plain_text"],
+    ".md": ["common", "file_stats", "plain_text"],
+    ".csv": ["common", "file_stats", "structured_text"],
     ".json": ["common", "file_stats", "structured_text"],
-    ".xml":  ["common", "file_stats", "structured_text"],
+    ".xml": ["common", "file_stats", "structured_text"],
     ".html": ["common", "file_stats", "structured_text"],
-
     # audio: lossy
-    ".mp3": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
-    ".m4a": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
-    ".aac": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
-    ".ogg": ["common", "file_stats", "audio_descriptive", "audio_technical", "audio_lossy"],
-
+    ".mp3": [
+        "common",
+        "file_stats",
+        "audio_descriptive",
+        "audio_technical",
+        "audio_lossy",
+    ],
+    ".m4a": [
+        "common",
+        "file_stats",
+        "audio_descriptive",
+        "audio_technical",
+        "audio_lossy",
+    ],
+    ".aac": [
+        "common",
+        "file_stats",
+        "audio_descriptive",
+        "audio_technical",
+        "audio_lossy",
+    ],
+    ".ogg": [
+        "common",
+        "file_stats",
+        "audio_descriptive",
+        "audio_technical",
+        "audio_lossy",
+    ],
     # audio: lossless
-    ".wav":  ["common", "file_stats", "audio_technical"],
+    ".wav": ["common", "file_stats", "audio_technical"],
     ".flac": ["common", "file_stats", "audio_descriptive", "audio_technical"],
     ".aiff": ["common", "file_stats", "audio_technical"],
-    ".aif":  ["common", "file_stats", "audio_technical"],
-
+    ".aif": ["common", "file_stats", "audio_technical"],
     # video
-    ".mp4":  ["common", "file_stats", "video_technical"],
-    ".mov":  ["common", "file_stats", "video_technical"],
-    ".mkv":  ["common", "file_stats", "video_technical"],
-    ".avi":  ["common", "file_stats", "video_technical"],
+    ".mp4": ["common", "file_stats", "video_technical"],
+    ".mov": ["common", "file_stats", "video_technical"],
+    ".mkv": ["common", "file_stats", "video_technical"],
+    ".avi": ["common", "file_stats", "video_technical"],
     ".webm": ["common", "file_stats", "video_technical"],
 }
 
@@ -205,7 +363,11 @@ def exiftool_fields_for(suffix: str) -> list[str]:
     """Replaces type_specific_metadata() — what to request from exiftool."""
     if suffix not in FILETYPE_GROUPS:
         raise ValueError(f"No field mapping registered for {suffix!r}")
-    return [fd.exif_field for group in FILETYPE_GROUPS[suffix] for fd in FIELD_REGISTRY[group]]
+    return [
+        fd.exif_field
+        for group in FILETYPE_GROUPS[suffix]
+        for fd in FIELD_REGISTRY[group]
+    ]
 
 
 def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
@@ -217,7 +379,11 @@ def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
             raw_exif_value = exif_data.get(file_definition.exif_field)
             if raw_exif_value is None:
                 continue
-            value = file_definition.transform(raw_exif_value) if file_definition.transform else raw_exif_value
+            value = (
+                file_definition.transform(raw_exif_value)
+                if file_definition.transform
+                else raw_exif_value
+            )
             if value is None:
                 continue
 
@@ -227,6 +393,7 @@ def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
                 technical[(file_definition.namespace, file_definition.key)] = value
 
     return {"dublin_core": dc, "technical_information": technical}
+
 
 def build_sidecar_graph(data_source: FileState, sidecar: dict) -> Graph:
     g = Graph()
@@ -262,8 +429,19 @@ def write_sidecar(
 
     valid, msg = validate_sidecar(sidecar_path, expected_graph=g)
     if not valid:
-        return logger.change_state(data_source, "ERROR", data_source.current_path, note=f"Sidecar validation failed: {msg}")
-    return logger.change_state(data_source, "CREATE_SIDECAR", data_source.current_path, sidecar_path=sidecar_path, note=msg)
+        return logger.change_state(
+            data_source,
+            "ERROR",
+            data_source.current_path,
+            note=f"Sidecar validation failed: {msg}",
+        )
+    return logger.change_state(
+        data_source,
+        "CREATE_SIDECAR",
+        data_source.current_path,
+        sidecar_path=sidecar_path,
+        note=msg,
+    )
 
 
 def validate_sidecar(sidecar_path: Path, expected_graph: Graph) -> tuple[bool, str]:
@@ -276,7 +454,10 @@ def validate_sidecar(sidecar_path: Path, expected_graph: Graph) -> tuple[bool, s
     if set(reparsed) != set(expected_graph):
         missing = set(expected_graph) - set(reparsed)
         extra = set(reparsed) - set(expected_graph)
-        return False, f"Mismatch between written and expected XML: missing: {missing}, unexpected: {extra}"
+        return (
+            False,
+            f"Mismatch between written and expected XML: missing: {missing}, unexpected: {extra}",
+        )
 
     return True, f"Valid XML: {len(reparsed)} triples"
 

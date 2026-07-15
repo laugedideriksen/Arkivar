@@ -2,7 +2,7 @@ import os
 import csv
 import json
 from log_writer import LogWriter
-from utils import dc_template
+from metadata import dc_template
 from pathlib import Path
 
 
@@ -114,6 +114,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
             note="",
         )
         print(f"data/ created at {data_dir}")
+
 
 def _create_metadata_template(project_path: Path, logger: LogWriter):
     metadata_temp = project_path / "metadata.json"
