@@ -120,7 +120,7 @@ class LogWriter:
         with open(self.log_file, mode="a", newline="") as f:
             writer = csv.writer(f)
 
-            if new_hash is None:
+            if new_hash is None and path_after.is_file():
                 new_hash = self._calculate_sha256(path_after)
 
             writer.writerow(

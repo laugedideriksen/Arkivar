@@ -53,6 +53,7 @@ def _create_changelog(project_path: Path) -> LogWriter:
 def _create_dirs(project_path: Path, logger: LogWriter) -> None:
     staging_dir = project_path / "staging"
     quarantine_dir = project_path / "quarantine"
+    data_dir = project_path / "data"
     if staging_dir.exists():
         logger._write_log_entry(
             action_type="ERROR",
@@ -94,6 +95,25 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
         )
         print(f"quarantine/ created at {quarantine_dir}")
 
+    if data_dir.exists():
+        logger._write_log_entry(
+            action_type="ERROR",
+            path_before=data_dir,
+            path_after=data_dir,
+            new_hash=None,
+            note="CREATE_DATA_DIR failed: data/ already exists",
+        )
+        print(f"data/ already exists at {data_dir}")
+    else:
+        os.makedirs(data_dir, exist_ok=False)
+        logger._write_log_entry(
+            action_type="CREATE_DATA_DIR",
+            path_before=None,
+            path_after=data_dir.resolve(),
+            new_hash=None,
+            note="",
+        )
+        print(f"data/ created at {data_dir}")
 
 def _create_metadata_template(project_path: Path, logger: LogWriter):
     metadata_temp = project_path / "metadata.json"
@@ -129,6 +149,7 @@ def init_dir(project_path: str | Path):
     elif (
         os.path.isdir(project_path / "staging")
         and os.path.isdir(project_path / "quarantine")
+        and os.path.isdir(project_path / "data")
         and os.path.isfile(project_path / "changelog.csv")
         and os.path.isfile(project_path / "metadata.json")
     ):
@@ -142,6 +163,7 @@ def init_dir(project_path: str | Path):
     if (
         os.path.isdir(project_path / "staging")
         and os.path.isdir(project_path / "quarantine")
+        and os.path.isdir(project_path / "data")
         and os.path.isfile(project_path / "changelog.csv")
         and os.path.isfile(project_path / "metadata.json")
     ):

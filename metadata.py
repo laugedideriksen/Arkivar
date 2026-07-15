@@ -1,5 +1,4 @@
 from datetime import datetime
-import subprocess
 from uuid import uuid4
 from rdflib import Graph, Namespace, Literal, URIRef
 from rdflib.namespace import DCTERMS
@@ -264,7 +263,6 @@ def write_sidecar(
     valid, msg = validate_sidecar(sidecar_path, expected_graph=g)
     if not valid:
         return logger.change_state(data_source, "ERROR", data_source.current_path, note=f"Sidecar validation failed: {msg}")
-    logger._write_log_entry(action_type="CREATE_SIDECAR", path_before=None, path_after=sidecar_path, note=msg)
     return logger.change_state(data_source, "CREATE_SIDECAR", data_source.current_path, sidecar_path=sidecar_path, note=msg)
 
 

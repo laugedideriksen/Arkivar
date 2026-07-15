@@ -27,6 +27,9 @@ def _ingest_file(
     if data_source.status == "METADATA_EXTRACTED":
         data_source = arkivar.create_sidecar_file(data_source, logger, project_path)
 
+    if data_source.status == "SIDECAR_CREATED":
+        data_source = arkivar.organise(project_path, data_source, logger)
+
     # state = arkivar.organise(data_source, logger)
     # arkivar.finalise(logger)
 
@@ -56,6 +59,10 @@ def ingest(source_path: str | Path, project_path: str | Path) -> None:
         _ingest_directory(source_path, project_path, logger)
 
 
+def bag_project(project_path: str | Path):
+    pass
+
+
 if __name__ == "__main__":
-    # init_dir("testdir")
+    #init_dir("testdir")
     ingest("testfileDuring.pdf", "testdir")
