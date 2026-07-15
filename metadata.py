@@ -1,4 +1,5 @@
 from datetime import datetime
+import subprocess
 from uuid import uuid4
 from rdflib import Graph, Namespace, Literal, URIRef
 from rdflib.namespace import DCTERMS
@@ -9,7 +10,7 @@ from typing import Optional
 
 EXIF = Namespace("http://www.w3.org/2003/12/exif/ns#")
 NFO = Namespace("http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#")
-ARKIVAR = Namespace("fallback-namespace-for-this-application")
+ARKIVAR = Namespace("https://arkivar.example/ns/technical#")
 
 
 def _parse_exif_datetime(value: str) -> str:
@@ -34,11 +35,11 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
 
     # --- shared across (almost) everything ---
     "common": [
-        FieldDefinition("File Name", Target.DUBLIN_CORE, "titles"),
-        FieldDefinition("File Type", Target.DUBLIN_CORE, "formats"),
+        FieldDefinition("File:FileName", Target.DUBLIN_CORE, "titles"),#TODO The issue seems to be that there is a type tag in front (e.g. File:)
+        FieldDefinition("File:FileType", Target.DUBLIN_CORE, "formats"),
     ],
     "file_stats": [
-        FieldDefinition("File Size", Target.TECHNICAL, "fileSize", namespace=ARKIVAR, transform=_to_int),
+        FieldDefinition("File:FileSize", Target.TECHNICAL, "fileSize", namespace=ARKIVAR, transform=_to_int),
     ],
 
     # --- images ---
@@ -71,11 +72,11 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
 
     # --- documents ---
     "document": [
-        FieldDefinition("Creator", Target.DUBLIN_CORE, "creators"),
-        FieldDefinition("Producer", Target.TECHNICAL, "producer", namespace=ARKIVAR),
-        FieldDefinition("Creator Tool", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR),
-        FieldDefinition("Page Count", Target.TECHNICAL, "pageCount", namespace=NFO, transform=_to_int),
-        FieldDefinition("PDF Version", Target.TECHNICAL, "pdfVersion", namespace=ARKIVAR),
+        FieldDefinition("PDF:Creator", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("XMP:Producer", Target.TECHNICAL, "producer", namespace=ARKIVAR),
+        FieldDefinition("XMP:CreatorTool", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR),
+        FieldDefinition("PDF:PageCount", Target.TECHNICAL, "pageCount", namespace=NFO, transform=_to_int),
+        FieldDefinition("PDF:PDFVersion", Target.TECHNICAL, "pdfVersion", namespace=ARKIVAR),
     ],
     "office_document": [  # DOCX, ODT, RTF
         FieldDefinition("Author", Target.DUBLIN_CORE, "creators"),
@@ -94,20 +95,21 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
 
     # --- audio ---
     "audio_descriptive": [  # ID3-style tags — about the content, not the encoding
-        FieldDefinition("Title", Target.DUBLIN_CORE, "titles"),
-        FieldDefinition("Artist", Target.DUBLIN_CORE, "creators"),
-        FieldDefinition("Album", Target.DUBLIN_CORE, "relations"),
-        FieldDefinition("Year", Target.DUBLIN_CORE, "dates"),
-        FieldDefinition("Genre", Target.DUBLIN_CORE, "subject"),
+      FieldDefinition("ID:3Title", Target.DUBLIN_CORE, "titles"),
+      FieldDefinition("ID3:Artist", Target.DUBLIN_CORE, "creators"),
+      FieldDefinition("ID3:Album", Target.DUBLIN_CORE, "relations"),
+      FieldDefinition("ID3:Year", Target.DUBLIN_CORE, "dates"),
+      FieldDefinition("ID3:Genre", Target.DUBLIN_CORE, "subject"),
     ],
     "audio_technical": [  # shared by lossy and lossless
-        FieldDefinition("Duration", Target.TECHNICAL, "duration", namespace=NFO),
+                        FieldDefinition("Composite:Duration", Target.TECHNICAL, "duration", namespace=NFO),
         FieldDefinition("Sample Rate", Target.TECHNICAL, "sampleRate", namespace=NFO, transform=_to_int),
         FieldDefinition("Num Channels", Target.TECHNICAL, "channels", namespace=NFO, transform=_to_int),
         FieldDefinition("Bits Per Sample", Target.TECHNICAL, "bitsPerSample", namespace=ARKIVAR, transform=_to_int),
     ],
     "audio_lossy": [  # MP3, AAC, OGG, M4A — extra fields for compressed audio
-        FieldDefinition("Audio Bitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
+        FieldDefinition("MPEG:AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
+        FieldDefinition("AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
         FieldDefinition("Encoder", Target.TECHNICAL, "encoder", namespace=ARKIVAR),
     ],
 
@@ -181,6 +183,25 @@ FILETYPE_GROUPS: dict[str, list[str]] = {
 }
 
 
+DC_TEMPLATE_TO_DCTERMS = {
+    "contributors": DCTERMS.contributor,
+    "coverage": DCTERMS.coverage,
+    "creators": DCTERMS.creator,
+    "dates": DCTERMS.date,
+    "descriptions": DCTERMS.description,
+    "formats": DCTERMS.format,
+    "identifiers": DCTERMS.identifier,
+    "languages": DCTERMS.language,
+    "publishers": DCTERMS.publisher,
+    "relations": DCTERMS.relation,
+    "rights": DCTERMS.rights,
+    "sources": DCTERMS.source,
+    "subject": DCTERMS.subject,
+    "titles": DCTERMS.title,
+    "types": DCTERMS.type,
+}
+
+
 def exiftool_fields_for(suffix: str) -> list[str]:
     """Replaces type_specific_metadata() — what to request from exiftool."""
     if suffix not in FILETYPE_GROUPS:
@@ -208,25 +229,24 @@ def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
 
     return {"dublin_core": dc, "technical_information": technical}
 
-
-def build_sidecar_graph(
-        data_source: FileState, sidecar: dict) -> Graph:
+def build_sidecar_graph(data_source: FileState, sidecar: dict) -> Graph:
     g = Graph()
     g.bind("dcterms", DCTERMS)
     g.bind("exif", EXIF)
     g.bind("nfo", NFO)
+    g.bind("arkivar", ARKIVAR)
 
     subject = URIRef(f"urn:uuid:{data_source.uri}")
 
     for key, values in sidecar["dublin_core"].items():
-        predicate = DCTERMS[key.rstrip("s")]
+        predicate = DC_TEMPLATE_TO_DCTERMS[key]
         for value in values:
             if value:
                 g.add((subject, predicate, Literal(value)))
 
     for (namespace, local_name), value in sidecar["technical_information"].items():
         g.add((subject, namespace[local_name], Literal(value)))
-    
+
     return g
 
 
@@ -234,16 +254,33 @@ def write_sidecar(
     data_source: FileState,
     logger: LogWriter,
     sidecar: dict,
-) -> None:
+) -> FileState:
     g = build_sidecar_graph(data_source, sidecar)
 
     data_source_path = Path(data_source.current_path)
     sidecar_path = data_source_path.with_suffix(data_source_path.suffix + ".rdf.xml")
     g.serialize(destination=str(sidecar_path), format="pretty-xml")
 
-    logger._write_log_entry(
-        action_type="CREATE_SIDECAR", path_before=None, path_after=sidecar_path, note=""
-    )
+    valid, msg = validate_sidecar(sidecar_path, expected_graph=g)
+    if not valid:
+        return logger.change_state(data_source, "ERROR", data_source.current_path, note=f"Sidecar validation failed: {msg}")
+    logger._write_log_entry(action_type="CREATE_SIDECAR", path_before=None, path_after=sidecar_path, note=msg)
+    return logger.change_state(data_source, "CREATE_SIDECAR", data_source.current_path, sidecar_path=sidecar_path, note=msg)
+
+
+def validate_sidecar(sidecar_path: Path, expected_graph: Graph) -> tuple[bool, str]:
+    try:
+        reparsed = Graph()
+        reparsed.parse(str(sidecar_path), format="xml")
+    except Exception as e:
+        return False, f"Invalid RDF/XML: {e}"
+
+    if set(reparsed) != set(expected_graph):
+        missing = set(expected_graph) - set(reparsed)
+        extra = set(reparsed) - set(expected_graph)
+        return False, f"Mismatch between written and expected XML: missing: {missing}, unexpected: {extra}"
+
+    return True, f"Valid XML: {len(reparsed)} triples"
 
 
 def dc_template() -> dict:

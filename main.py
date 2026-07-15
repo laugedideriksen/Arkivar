@@ -4,7 +4,7 @@ from log_writer import LogWriter
 from data_objects import FileState, create_filestate
 from init_dir import init_dir
 from pathlib import Path, PurePath
-
+from pprint import pprint
 
 def _ingest_file(
     source: FileState | Path, project_path: Path, logger: LogWriter
@@ -25,9 +25,9 @@ def _ingest_file(
         data_source = arkivar.extract_metadata(data_source, logger)
 
     if data_source.status == "METADATA_EXTRACTED":
-        data_source = arkivar.consolidate_metadata(data_source, logger)
-    # state = arkivar.write_sidecar(state, logger)
-    # state = arkivar.organise(state, logger)
+        data_source = arkivar.create_sidecar_file(data_source, logger, project_path)
+
+    # state = arkivar.organise(data_source, logger)
     # arkivar.finalise(logger)
 
 
@@ -58,4 +58,4 @@ def ingest(source_path: str | Path, project_path: str | Path) -> None:
 
 if __name__ == "__main__":
     # init_dir("testdir")
-    ingest("testfile.md", "testdir")
+    ingest("testfileDuring.pdf", "testdir")

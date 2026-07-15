@@ -46,6 +46,7 @@ class LogWriter:
         path_after_action: Path,
         note: str = "",
         meta_data: dict | None = None,
+        sidecar_path: Path | None = None,
     ) -> "FileState":
         timestamp = datetime.now().strftime(self.dt_format)
         path_before_action = state.current_path
@@ -88,13 +89,21 @@ class LogWriter:
                 status=new_status,
                 metadata=meta_data,
             )
-
-        return replace(
-            state,
-            current_path=path_after_action,
-            current_hash=hash_after_action,
-            status=new_status,
-        )
+        elif sidecar_path:
+            return replace(
+                state,
+                current_path=path_after_action,
+                current_hash=hash_after_action,
+                status=new_status,
+                sidecar_path=sidecar_path,
+            )
+        else:
+            return replace(
+                    state,
+                    current_path=path_after_action,
+                    current_hash=hash_after_action,
+                    status=new_status,
+                    )
 
     def _write_log_entry(
         self,

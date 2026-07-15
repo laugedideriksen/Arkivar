@@ -5,13 +5,16 @@ from utils import (
     validate_file,
     run_exiftool,
     dc_template,
-    metadata_map,
-    type_specific_metadata,
 )
+from metadata import (
+        exiftool_fields_for,
+        build_sidecar,
+        write_sidecar,
+        validate_sidecar,
+        )
 import os
 import json
 from pathlib import Path
-from pprint import pprint
 
 
 def stage(data_source: FileState, logger: LogWriter, staging_dir: Path) -> FileState:
@@ -85,8 +88,13 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
     if data_source.status != "VALIDATED":
         return data_source
 
-    # TODO: Extract metadata
-    success, output = run_exiftool(data_source.current_path)
+    suffix = data_source.current_path.suffix.lower()
+    try:
+        fields = exiftool_fields_for(suffix)
+    except ValueError as e:
+        return logger.change_state(data_source, "ERROR", data_source.current_path, note=str(e))
+
+    success, output = run_exiftool(data_source.current_path, fields)
 
     if success and output != {}:
         return logger.change_state(
@@ -113,7 +121,6 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
 
 
 def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
-    # TODO: TEST!!! And figure out how to log this action.
     """Replaces any unaltered field in metadata.json with an empty list"""
     try:
         metadata_file = project_path / "metadata.json"
@@ -140,34 +147,16 @@ def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
     except Exception as e:
         raise e
 
-
-def consolidate_metadata(data_source: FileState, logger: LogWriter) -> FileState:
-    """Consolidate extracted metadata and project metadata"""
-    if data_source.status != "METADATA_EXTRACTED":
-        return data_source
-
-    object_path = Path(data_source.current_path)
-    project_path = object_path.parent.parent
+def create_sidecar_file(data_source: FileState, logger: LogWriter, project_path: Path) -> FileState:
+    suffix = data_source.current_path.suffix
+    exif_data = data_source.metadata
     metadata_file = project_path / "metadata.json"
     with open(metadata_file, "r") as f:
         project_metadata = json.load(f)
-    object_metadata = data_source.metadata
-    filetype_metadata = type_specific_metadata(object_path.suffix)
-
-    # Create metadata template for data_source based on project metadata, and exif fields specific to its filetype
-    object_metadata_template = project_metadata | {k: v}
-
-    # TODO: iterate over object_metadata_template and replace existing values with values from data_source.metadata, if present. Use metadata_map to translate naming conventions.
-    # TODO: Might make more sense to insert values to filetype metadata and only then replace in/add to object metadata?
-
+    sidecar_dict = build_sidecar(project_metadata, exif_data, suffix)
+    data_source = write_sidecar(data_source, logger, sidecar_dict)
     return data_source
 
-
-# def write_sidecar(data_source: FileState, logger: LogWriter) -> FileState:
-#    """Reformat extracted metadata, combine it with project metadata and write it to a sidecar file."""
-#    pass
-#
-#
 # def organise(data_source: FileState, logger: LogWriter) -> FileState:
 #    """Move files to bag folders"""
 #    pass
