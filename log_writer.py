@@ -19,17 +19,6 @@ class LogWriter:
         # TODO: Is ensure init necessary?
         # self._ensure_init()
 
-    def _ensure_init(self):
-        if not (
-            os.path.isdir("staging")
-            and os.path.isdir("quarantine")
-            and os.path.isfile("changelog.csv")
-            and os.path.isfile("metadata.json")
-        ):
-            raise Exception(
-                f"{os.getcwd()} doesn't seem to be initialised. Please run arkivar init."
-            )
-
     def _calculate_sha256(self, file_path: Path) -> str:
         if not os.path.exists(file_path):
             return f"FILE_MISSING: {file_path}"

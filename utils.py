@@ -20,8 +20,6 @@ def validate_file(file_state: FileState) -> bool:
         case _:
             pass
 
-    if magic.lower() != extension.lower():
-        print(magic.lower(), extension.lower())
     return magic.lower() == extension.lower()
 
 

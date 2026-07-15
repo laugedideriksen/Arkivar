@@ -4,7 +4,6 @@ from log_writer import LogWriter
 from data_objects import FileState, create_filestate
 from init_dir import init_dir
 from pathlib import Path, PurePath
-from pprint import pprint
 
 
 def _ingest_file(
@@ -54,6 +53,17 @@ def ingest(source_path: str | Path, project_path: str | Path) -> None:
     if not os.path.exists(source_path):
         print(f"INGEST FAILED: {source_path} does not exist")
         return
+
+    if not (
+        os.path.isdir(project_path / "staging")
+        and os.path.isdir(project_path / "quarantine")
+        and os.path.isdir(project_path / "data")
+        and os.path.isfile(project_path / "changelog.csv")
+        and os.path.isfile(project_path / "metadata.json")
+    ):
+        raise Exception(
+            f"{project_path} doesn't seem to be initialised. Please run arkivar init {project_path}."
+        )
 
     arkivar.clean_project_metadata(project_path, logger)
 

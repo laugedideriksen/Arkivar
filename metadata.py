@@ -67,42 +67,57 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     # --- images ---
     "image_dimensions": [
         FieldDefinition(
-            "Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int
+            "EXIF:ExifImageWidth",
+            Target.TECHNICAL,
+            "width",
+            namespace=NFO,
+            transform=_to_int,
         ),
         FieldDefinition(
-            "Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int
+            "EXIF:ExifImageHeight",
+            Target.TECHNICAL,
+            "height",
+            namespace=NFO,
+            transform=_to_int,
         ),
     ],
     "camera": [  # EXIF-bearing images: JPEG, TIFF, most RAW, HEIC
         FieldDefinition(
-            "Date/Time Original",
+            "EXIF:DateTimeOriginal",
             Target.DUBLIN_CORE,
             "dates",
             transform=_parse_exif_datetime,
         ),
-        FieldDefinition("Artist", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("EXIF:Artist", Target.DUBLIN_CORE, "creators"),
         FieldDefinition(
-            "Exposure Time", Target.TECHNICAL, "exposureTime", namespace=EXIF
+            "Composite:ShutterSpeed", Target.TECHNICAL, "shutterSpeed", namespace=EXIF
         ),
-        FieldDefinition("F Number", Target.TECHNICAL, "fNumber", namespace=EXIF),
         FieldDefinition(
+            "Composite:Aperture", Target.TECHNICAL, "fNumber", namespace=EXIF
+        ),
+        FieldDefinition(
+            "EXIF:ISO",
+            Target.TECHNICAL,
             "ISO",
-            Target.TECHNICAL,
-            "isoSpeedRatings",
             namespace=EXIF,
             transform=_to_int,
+        ),
+        FieldDefinition("EXIF:Flash", Target.TECHNICAL, "flash", namespace=EXIF),
+        FieldDefinition(
+            "Composite:FocalLength35efl",
+            Target.TECHNICAL,
+            "focalLengthIn35mmEquivalent",
+            namespace=EXIF,
+            transform=_to_int,
+        ),
+        FieldDefinition("EXIF:Make", Target.TECHNICAL, "cameraMake", namespace=EXIF),
+        FieldDefinition("EXIF:Model", Target.TECHNICAL, "cameraModel", namespace=EXIF),
+        FieldDefinition(
+            "EXIF:LensMake", Target.TECHNICAL, "lensMake", namespace=ARKIVAR
         ),
         FieldDefinition(
-            "Focal Length In 35mm Format",
-            Target.TECHNICAL,
-            "focalLengthIn35mmFilm",
-            namespace=EXIF,
-            transform=_to_int,
+            "EXIF:LensModel", Target.TECHNICAL, "lensModel", namespace=ARKIVAR
         ),
-        FieldDefinition("Make", Target.TECHNICAL, "make", namespace=EXIF),
-        FieldDefinition("Camera Model Name", Target.TECHNICAL, "model", namespace=EXIF),
-        FieldDefinition("Lens Make", Target.TECHNICAL, "lensMake", namespace=ARKIVAR),
-        FieldDefinition("Lens Model", Target.TECHNICAL, "lensModel", namespace=ARKIVAR),
     ],
     "raw_image": [  # extra fields on top of "camera", for CR2/CR3/NEF/ARW/ORF/RAF/DNG
         FieldDefinition(
@@ -215,21 +230,21 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
             "Composite:Duration", Target.TECHNICAL, "duration", namespace=NFO
         ),
         FieldDefinition(
-            "Sample Rate",
+            "RIFF:SampleRate",
             Target.TECHNICAL,
             "sampleRate",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "Num Channels",
+            "RIFF:NumChannels",
             Target.TECHNICAL,
             "channels",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "Bits Per Sample",
+            "RIFF:BitsPerSample",
             Target.TECHNICAL,
             "bitsPerSample",
             namespace=ARKIVAR,
@@ -241,7 +256,9 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
             "MPEG:AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR
         ),
         FieldDefinition("AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
-        FieldDefinition("Encoder", Target.TECHNICAL, "encoder", namespace=ARKIVAR),
+        FieldDefinition(
+            "MPEG:EncodedBy", Target.TECHNICAL, "encoder", namespace=ARKIVAR
+        ),
     ],
     # --- video --- (field names least verified — check against your own files)
     "video_technical": [
