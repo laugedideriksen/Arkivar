@@ -1,3 +1,4 @@
+from datetime import date
 from data_objects import FileState
 from log_writer import LogWriter
 from utils import (
@@ -14,6 +15,7 @@ from metadata import (
 import os
 import json
 from pathlib import Path
+from typing import Optional
 
 
 def stage(data_source: FileState, logger: LogWriter, staging_dir: Path) -> FileState:
@@ -163,12 +165,30 @@ def create_sidecar_file(
     return data_source
 
 
+def _date_subpath(d: date, resolution: str) -> Path:
+    components = {
+        "year": [f"{d.year:04d}"],
+        "month": [f"{d.year:04d}", f"{d.month:02d}"],
+        "day": [f"{d.year:04d}", f"{d.month:02d}", f"{d.day:02d}"],
+    }[resolution]
+    return Path(*components)
+
+
 def organise(
-    project_path: Path, data_source: FileState, logger: LogWriter
+    project_path: Path,
+    data_source: FileState,
+    logger: LogWriter,
+    date_resolution: Optional[str] = "day",
 ) -> FileState:
     """Move files to data/"""
     data_dir = project_path / "data"
-    target_dir = data_dir / data_source.relative_source_path
+
+    if date_resolution and data_source.created_date:
+        date_dir = _date_subpath(data_source.created_date, date_resolution)
+    else:
+        date_dir = Path("undated")
+
+    target_dir = data_dir / date_dir / data_source.relative_source_path
     target_dir.mkdir(parents=True, exist_ok=True)
     file_target = target_dir / data_source.base_name
     sidecar_target = target_dir / data_source.sidecar_path.name

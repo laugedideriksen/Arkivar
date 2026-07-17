@@ -4,6 +4,7 @@ from log_writer import LogWriter
 from data_objects import FileState, create_filestate
 from init_dir import init_dir
 from pathlib import Path, PurePath
+import bagit
 
 
 def _ingest_file(
@@ -80,11 +81,12 @@ def reevaluate_quarantine(project_path: Path, logger: LogWriter):
     pass
 
 
-def bag_project(project_path: str | Path):
-    # TODO: Implement BagIt.
-    pass
+def bag_project(project_path: str | Path) -> None:
+    project_path = Path(project_path)
+    bagit.make_bag(project_path, checksums=["sha256"])
 
 
 if __name__ == "__main__":
     # init_dir("testdir")
     ingest("/home/ld/Documents/Coding/ongoingProjects/OnsetExtractor/data", "testdir")
+    # bag_project("testdir")

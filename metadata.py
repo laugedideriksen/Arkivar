@@ -8,6 +8,42 @@ from log_writer import LogWriter
 from dataclasses import dataclass
 from typing import Optional, Any, Callable
 from enum import Enum
+from utils import resolve_created_date
+
+
+def dc_template() -> dict:
+    return dict(
+        contributors=[
+            "An entity responsible for making contributions to the resource."
+        ],
+        coverage=[
+            "The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction under which the resource is relevant."
+        ],
+        creators=["An entity primarily responsible for making the resource."],
+        dates=[
+            "A point or period of time associated with an event in the lifecycle of the resource."
+        ],
+        descriptions=[
+            "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource."
+        ],
+        formats=["The file format, physical medium, or dimensions of the resource."],
+        identifiers=[
+            "An unambiguous reference to the resource within a given context. Recommended best practice is to identify the resource by means of a string conforming to a formal identification system."
+        ],
+        languages=["A language of the resource."],
+        publishers=["An entity responsible for making the resource available."],
+        relations=[
+            "A related resource. Recommended practice is to identify the related resource by means of a URI. If this is not possible or feasible, a string conforming to a formal identification system may be provided."
+        ],
+        rights=["Information about rights held in and over the resource."],
+        sources=["A related resource from which the described resource is derived."],
+        subject=[
+            "The topic of the resource. Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary."
+        ],
+        titles=["A name given to the resource."],
+        types=["The nature or genre of the resource."],
+    )
+
 
 EXIF = Namespace("http://www.w3.org/2003/12/exif/ns#")
 NFO = Namespace("http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#")
@@ -50,9 +86,7 @@ def _to_float(value: str | int | float) -> Optional[float]:
 FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     # --- shared across (almost) everything ---
     "common": [
-        FieldDefinition(
-            "File:FileName", Target.DUBLIN_CORE, "titles"
-        ),  # TODO The issue seems to be that there is a type tag in front (e.g. File:)
+        FieldDefinition("File:FileName", Target.DUBLIN_CORE, "titles"),
         FieldDefinition("File:FileType", Target.DUBLIN_CORE, "formats"),
     ],
     "file_stats": [
@@ -440,7 +474,7 @@ def write_sidecar(
 ) -> FileState:
     g = build_sidecar_graph(data_source, sidecar)
 
-    data_source_path = Path(data_source.current_path)
+    data_source_path = data_source.current_path
     sidecar_path = data_source_path.with_suffix(data_source_path.suffix + ".rdf.xml")
     g.serialize(destination=str(sidecar_path), format="pretty-xml")
 
@@ -452,12 +486,20 @@ def write_sidecar(
             data_source.current_path,
             note=f"Sidecar validation failed: {msg}",
         )
+
+    created_date, date_source = resolve_created_date(sidecar, data_source_path)
+    if created_date:
+        note = f"{msg}; create date capture via {date_source}"
+    else:
+        note = f"{msg}; no capture date resolved."
+
     return logger.change_state(
         data_source,
         "CREATE_SIDECAR",
         data_source.current_path,
         sidecar_path=sidecar_path,
-        note=msg,
+        created_date=created_date,
+        note=note,
     )
 
 
@@ -477,37 +519,3 @@ def validate_sidecar(sidecar_path: Path, expected_graph: Graph) -> tuple[bool, s
         )
 
     return True, f"Valid XML: {len(reparsed)} triples"
-
-
-def dc_template() -> dict:
-    return dict(
-        contributors=[
-            "An entity responsible for making contributions to the resource."
-        ],
-        coverage=[
-            "The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction under which the resource is relevant."
-        ],
-        creators=["An entity primarily responsible for making the resource."],
-        dates=[
-            "A point or period of time associated with an event in the lifecycle of the resource."
-        ],
-        descriptions=[
-            "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource."
-        ],
-        formats=["The file format, physical medium, or dimensions of the resource."],
-        identifiers=[
-            "An unambiguous reference to the resource within a given context. Recommended best practice is to identify the resource by means of a string conforming to a formal identification system."
-        ],
-        languages=["A language of the resource."],
-        publishers=["An entity responsible for making the resource available."],
-        relations=[
-            "A related resource. Recommended practice is to identify the related resource by means of a URI. If this is not possible or feasible, a string conforming to a formal identification system may be provided."
-        ],
-        rights=["Information about rights held in and over the resource."],
-        sources=["A related resource from which the described resource is derived."],
-        subject=[
-            "The topic of the resource. Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary."
-        ],
-        titles=["A name given to the resource."],
-        types=["The nature or genre of the resource."],
-    )

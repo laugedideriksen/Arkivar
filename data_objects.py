@@ -3,6 +3,7 @@ from typing import Optional
 from uuid import uuid4
 import os
 from pathlib import Path
+from datetime import date
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,7 @@ class FileState:
     current_hash: Optional[str] = None
     metadata: Optional[dict] = None
     sidecar_path: Optional[Path] = None
+    created_date: Optional[date] = None
     status: str = "NEW"
 
 

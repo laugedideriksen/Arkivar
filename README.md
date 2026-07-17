@@ -25,7 +25,7 @@ mkdir ~/project
 arkivar init ~/project/
 # edit ~/project/metadata.json
 arkivar ingest /media/user/sd1/ ~/project/
-arkivar bag ~/project
+arkivar bag ~/project/
 ```
 
 ## Namespace selection policy

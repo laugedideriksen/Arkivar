@@ -1,6 +1,6 @@
 import csv
 import os
-from datetime import datetime
+from datetime import datetime, date
 from hashlib import sha256
 from data_objects import FileState
 from typing import Optional
@@ -36,6 +36,7 @@ class LogWriter:
         note: str = "",
         meta_data: dict | None = None,
         sidecar_path: Path | None = None,
+        created_date: date | None = None,
     ) -> "FileState":
         timestamp = datetime.now().strftime(self.dt_format)
         path_before_action = state.current_path
@@ -69,29 +70,19 @@ class LogWriter:
             "CREATE_SIDECAR": "SIDECAR_CREATED",
         }
         new_status = status_map.get(action, state.status)
+        updates = {
+            "current_path": path_after_action,
+            "current_hash": hash_after_action,
+            "status": new_status,
+        }
         if meta_data is not None:
-            return replace(
-                state,
-                current_path=path_after_action,
-                current_hash=hash_after_action,
-                status=new_status,
-                metadata=meta_data,
-            )
-        elif sidecar_path is not None:
-            return replace(
-                state,
-                current_path=path_after_action,
-                current_hash=hash_after_action,
-                status=new_status,
-                sidecar_path=sidecar_path,
-            )
-        else:
-            return replace(
-                state,
-                current_path=path_after_action,
-                current_hash=hash_after_action,
-                status=new_status,
-            )
+            updates["metadata"] = meta_data
+        if sidecar_path is not None:
+            updates["sidecar_path"] = sidecar_path
+        if created_date is not None:
+            updates["created_date"] = created_date
+
+        return replace(state, **updates)
 
     def _write_log_entry(
         self,
