@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 from init_dir import init_dir
-from main import ingest, bag_project
+from main import ingest, bag_project, requeue_quarantine
 
 __version__ = "0.1.0"
 
@@ -43,6 +43,21 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         ingest(args.source_path, args.project_path)
     except Exception as e:
         print(f"arkivar ingest: ingestion failed: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+def cmd_requeue(args: argparse.Namespace) -> int:
+    if not args.project_path.exists():
+        print(
+            f"arkivar requeue: project path does not exist: {args.source_path}",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        requeue_quarantine(args.project_path)
+    except Exception as e:
+        print(f"arkivar requeue: requeue failed: {e}", file=sys.stderr)
         return 1
     return 0
 
@@ -119,7 +134,7 @@ def build_parser() -> argparse.ArgumentParser:
         "project_path",
         type=Path,
         nargs="?",
-        defauslt=Path.cwd(),
+        default=Path.cwd(),
         help="Project directory to bag (default: current directory).",
     )
 

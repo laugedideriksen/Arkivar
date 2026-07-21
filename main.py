@@ -140,7 +140,7 @@ def bag_project(
     bag_path = arkivar.bag_project(project_path, output_path, cleanup=cleanup)
     print(f"Project bagged at {bag_path}")
 
-    return output_path
+    return bag_path
 
 
 if __name__ == "__main__":

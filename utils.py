@@ -15,8 +15,6 @@ def validate_file(file_state: FileState) -> bool:
     match extension:  # Some markdown files have are identified as txt files. This makes sure they don't fail to validate
         case "md":
             extension = "txt"
-        case "ascii":
-            extension = "txt"
         case _:
             pass
 

@@ -12,11 +12,11 @@ def _create_changelog(project_path: Path) -> LogWriter:
     if log_file.exists():
         logger = LogWriter(log_file)
         logger._write_log_entry(
-            action_type="ERROR",
+            action_type="SKIPPED",
             path_before=log_file,
             path_after=log_file,
             new_hash=None,
-            note="CREATE_CHANGELOG failed: changelog.csv already exists",
+            note="CREATE_CHANGELOG SKIPPED: changelog.csv already exists",
         )
         print(f"changelog.csv already exists at {log_file}")
         return logger
@@ -56,11 +56,11 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
     data_dir = project_path / "data"
     if staging_dir.exists():
         logger._write_log_entry(
-            action_type="ERROR",
+            action_type="SKIPPED",
             path_before=staging_dir,
             path_after=staging_dir,
             new_hash=None,
-            note="CREATE_STAGING_DIR failed: staging/ already exists",
+            note="CREATE_STAGING_DIR SKIPPED: staging/ already exists",
         )
         print(f"staging/ already exists at {staging_dir}")
     else:
@@ -76,11 +76,11 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
 
     if quarantine_dir.exists():
         logger._write_log_entry(
-            action_type="ERROR",
+            action_type="SKIPPED",
             path_before=quarantine_dir,
             path_after=quarantine_dir,
             new_hash=None,
-            note="CREATE_QUARANTINE_DIR failed: quarantine/ already exists",
+            note="CREATE_QUARANTINE_DIR SKIPPED: quarantine/ already exists",
         )
         print(f"quarantine/ already exists at {quarantine_dir}")
     else:
@@ -96,11 +96,11 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
 
     if data_dir.exists():
         logger._write_log_entry(
-            action_type="ERROR",
+            action_type="SKIPPED",
             path_before=data_dir,
             path_after=data_dir,
             new_hash=None,
-            note="CREATE_DATA_DIR failed: data/ already exists",
+            note="CREATE_DATA_DIR SKIPPED: data/ already exists",
         )
         print(f"data/ already exists at {data_dir}")
     else:
@@ -121,10 +121,10 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
 
     if metadata_temp.exists():
         logger._write_log_entry(
-            action_type="ERROR",
+            action_type="SKIPPED",
             path_before=metadata_temp,
             path_after=metadata_temp,
-            note="CREATE_METADATA_TEMPLATE failed: metadata.json already exists",
+            note="CREATE_METADATA_TEMPLATE SKIPPED: metadata.json already exists",
         )
         print(f"metadata.json already exists at {metadata_temp}")
     else:

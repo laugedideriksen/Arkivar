@@ -71,7 +71,7 @@ def _parse_exif_datetime(value: str) -> str:
 def _to_int(value: str | int | float) -> Optional[int]:
     try:
         return int(float(value))
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return None
 
 
@@ -79,7 +79,7 @@ def _to_int(value: str | int | float) -> Optional[int]:
 def _to_float(value: str | int | float) -> Optional[float]:
     try:
         return float(value)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return None
 
 
@@ -155,28 +155,28 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     ],
     "raw_image": [  # extra fields on top of "camera", for CR2/CR3/NEF/ARW/ORF/RAF/DNG
         FieldDefinition(
-            "Bits Per Sample",
+            "BitsPerSample",
             Target.TECHNICAL,
             "colorDepth",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "Color Space", Target.TECHNICAL, "colorSpace", namespace=ARKIVAR
+            "ColorSpace", Target.TECHNICAL, "colorSpace", namespace=ARKIVAR
         ),
         FieldDefinition(
-            "DNG Version", Target.TECHNICAL, "dngVersion", namespace=ARKIVAR
+            "DNGVersion", Target.TECHNICAL, "dngVersion", namespace=ARKIVAR
         ),
     ],
     "lossless_image": [  # PNG, TIFF, BMP, WebP — format facts, no EXIF exposure data
         FieldDefinition(
-            "Bit Depth",
+            "BitDepth",
             Target.TECHNICAL,
             "colorDepth",
             namespace=NFO,
             transform=_to_int,
         ),
-        FieldDefinition("Color Type", Target.TECHNICAL, "colorType", namespace=ARKIVAR),
+        FieldDefinition("ColorType", Target.TECHNICAL, "colorType", namespace=ARKIVAR),
         FieldDefinition(
             "Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR
         ),
@@ -204,21 +204,21 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     "office_document": [  # DOCX, ODT, RTF
         FieldDefinition("Author", Target.DUBLIN_CORE, "creators"),
         FieldDefinition(
-            "Page Count",
+            "PageCount",
             Target.TECHNICAL,
             "pageCount",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "Word Count",
+            "WordCount",
             Target.TECHNICAL,
             "wordCount",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "Character Count",
+            "CharacterCount",
             Target.TECHNICAL,
             "characterCount",
             namespace=NFO,
@@ -298,21 +298,21 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     "video_technical": [
         FieldDefinition("Duration", Target.TECHNICAL, "duration", namespace=NFO),
         FieldDefinition(
-            "Image Width", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int
+            "ImageWidth", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int
         ),
         FieldDefinition(
-            "Image Height", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int
+            "ImageHeight", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int
         ),
         FieldDefinition(
-            "Video Frame Rate", Target.TECHNICAL, "frameRate", namespace=ARKIVAR
+            "VideoFrameRate", Target.TECHNICAL, "frameRate", namespace=ARKIVAR
         ),
         FieldDefinition(
-            "Compressor ID", Target.TECHNICAL, "videoCodec", namespace=ARKIVAR
+            "CompressorID", Target.TECHNICAL, "videoCodec", namespace=ARKIVAR
         ),
         FieldDefinition(
-            "Audio Format", Target.TECHNICAL, "audioCodec", namespace=ARKIVAR
+            "AudioFormat", Target.TECHNICAL, "audioCodec", namespace=ARKIVAR
         ),
-        FieldDefinition("Avg Bitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
+        FieldDefinition("AvgBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
     ],
 }
 
