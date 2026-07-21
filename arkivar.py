@@ -199,39 +199,38 @@ def organise(
     staged_file_path = data_source.current_path
     staged_sidecar_path = data_source.sidecar_path
 
-    success, msg = run_rsync(data_source.current_path, file_target)
+    file_success, file_msg = run_rsync(data_source.current_path, file_target)
 
-    if success:
-        staged_file_path.unlink()
-        sidecar_success, sidecar_msg = run_rsync(
-            data_source.sidecar_path, sidecar_target
-        )
-        if sidecar_success:
-            staged_sidecar_path.unlink()
-            logger._write_log_entry(
-                action_type="SIDECAR_MOVED",
-                path_before=data_source.sidecar_path,
-                path_after=sidecar_target,
-                note=f"Rsync OK: {sidecar_msg}",
-            )
-            return logger.change_state(
-                data_source,
-                "MOVE_FILE",
-                file_target,
-                sidecar_path=sidecar_target,
-                note=f"Rsync OK: {msg}",
-            )
-        else:
-            return logger.change_state(
-                data_source,
-                "ERROR",
-                data_source.current_path,
-                note=f"Rsync FAILED on sidecar: {sidecar_msg}",
-            )
-    else:
+    if not file_success:
         return logger.change_state(
-            data_source, "ERROR", data_source.current_path, note=f"Rsync FAIL: {msg}"
-        )
+                data_source, "ERROR", staged_file_path, note=f"Rsync FAIL: {file_msg}")
+
+    sidecar_success, sidecar_msg = run_rsync(
+            data_source.sidecar_path, sidecar_target
+            )
+
+    if not sidecar_success:
+        if file_target.exists():
+            file_target.unlink()
+        return logger.change_state(
+                data_source, "ERROR", staged_sidecar_path, note=f"Rsync FAIL: {sidecar_msg}; file copy has been rolled back.")
+
+    staged_file_path.unlink()
+    staged_sidecar_path.unlink()
+
+    logger._write_log_entry(
+        action_type="SIDECAR_MOVED",
+        path_before=data_source.sidecar_path,
+        path_after=sidecar_target,
+        note=f"Rsync OK: {sidecar_msg}",
+    )
+    return logger.change_state(
+        data_source,
+        "MOVE_FILE",
+        file_target,
+        sidecar_path=sidecar_target,
+        note=f"Rsync OK: {file_msg}",
+    )
 
 
 def finalise(logger: LogWriter) -> None:
