@@ -3,6 +3,8 @@
 _Arkivar_ is a programme for transparently ingesting and archiving files and directories.
 On ingesting a file, _Arkivar_ validates its filetype, extracts its metadata, creates a sidecar file in RDF/XML, and organises it in a `BagIt` compliant file structure.
 Every step is automatically documented in `changelog.csv`.
+`Arkivar` can also archive a project in the `BagIt` format.
+In that case, the changelog and project metadata files are included as tag-files.
 
 Although it is primarily intended to be used as a CLI application, _Arkivar_ can also be imported as a Python module.
 
@@ -29,7 +31,7 @@ arkivar ingest /media/user/sd1/ ~/project/
 arkivar bag ~/project/
 ```
 
-## Namespace selection policy
+## Namespace Selection
 
 When Arkivar maps an extracted field to RDF, it follows this order of preference:
 
@@ -39,3 +41,4 @@ When Arkivar maps an extracted field to RDF, it follows this order of preference
 4. Otherwise, use this vocabulary (`arkivar:`) as the fallback.
 
 ## Installation and requirements
+In addition to Python 3.14 or above, `Arkivar` requires the modules `bagit`, `puremagic`, and `rdflib`.

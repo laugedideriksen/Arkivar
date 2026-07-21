@@ -7,15 +7,23 @@ name = "arkivar"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "bagit" },
     { name = "puremagic" },
     { name = "rdflib" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "bagit", specifier = ">=1.9.0" },
     { name = "puremagic", specifier = ">=2.2.0" },
     { name = "rdflib", specifier = ">=7.6.0" },
 ]
+
+[[package]]
+name = "bagit"
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/a0/8866b4c6f894af0eb10e4964157f3241dd4117700fc010e7825471d51a13/bagit-1.9.0.tar.gz", hash = "sha256:9455006c2d1df88be95ec1fccabc5ea623389589ea4c85b3d85bd256f29d7656", size = 23443, upload-time = "2025-06-13T17:44:26.969Z" }
 
 [[package]]
 name = "puremagic"
