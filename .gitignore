@@ -15,5 +15,5 @@ staging/
 changelog.csv
 metadata.json
 testfile*
-ns/
 testdir/
+testdir*

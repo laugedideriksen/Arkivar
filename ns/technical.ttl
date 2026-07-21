@@ -1,0 +1,145 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix vann:   <http://purl.org/vocab/vann/> .
+@prefix arkivar: <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+#################################################################
+# Ontology header
+#################################################################
+
+<https://laugedideriksen.github.io/arkivar/ns/technical/v1#>
+    a owl:Ontology ;
+    dcterms:title "Arkivar Technical Metadata Vocabulary"@en ;
+    dcterms:description "A small fallback vocabulary for technical file metadata extracted by Arkivar that has no equivalent term in Dublin Core, the EXIF RDF Schema, or the Nepomuk File Ontology (NFO)."@en ;
+    dcterms:created "2026-07-15"^^xsd:date ;
+    owl:versionInfo "1.0.0" ;
+    vann:preferredNamespacePrefix "arkivar" ;
+    vann:preferredNamespaceUri "https://laugedideriksen.github.io/arkivar/ns/technical/v1#" ;
+    dcterms:license <https://creativecommons.org/publicdomain/zero/1.0/> ;
+    rdfs:seeAlso <https://laugedideriksen.github.io/arkivar/ns/technical/v1/technical-vocabulary.md> .
+
+#################################################################
+# Properties
+#################################################################
+
+arkivar:fileSize
+    a rdf:Property ;
+    rdfs:label "file size"@en ;
+    rdfs:comment "Size of the file, in bytes."@en ;
+    rdfs:range xsd:integer ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:lensMake
+    a rdf:Property ;
+    rdfs:label "lens make"@en ;
+    rdfs:comment "Manufacturer of the lens used to capture an image, where distinct from the camera manufacturer."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:lensModel
+    a rdf:Property ;
+    rdfs:label "lens model"@en ;
+    rdfs:comment "Model name of the lens used to capture an image."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:colorSpace
+    a rdf:Property ;
+    rdfs:label "color space"@en ;
+    rdfs:comment "The color space encoding used by an image (e.g. sRGB, Adobe RGB)."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:dngVersion
+    a rdf:Property ;
+    rdfs:label "DNG version"@en ;
+    rdfs:comment "The version of the Adobe Digital Negative (DNG) specification a raw image file conforms to."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:colorType
+    a rdf:Property ;
+    rdfs:label "color type"@en ;
+    rdfs:comment "The pixel color type of a lossless image file (e.g. RGB, RGBA, Grayscale, Indexed)."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:compression
+    a rdf:Property ;
+    rdfs:label "compression"@en ;
+    rdfs:comment "The compression scheme applied to a file's encoded data."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:producer
+    a rdf:Property ;
+    rdfs:label "producer"@en ;
+    rdfs:comment "The software or service that produced a document file, as distinct from the tool used to author its content (see arkivar:creatorTool)."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:creatorTool
+    a rdf:Property ;
+    rdfs:label "creator tool"@en ;
+    rdfs:comment "The software application used to author or create the content of a file."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:pdfVersion
+    a rdf:Property ;
+    rdfs:label "PDF version"@en ;
+    rdfs:comment "The version of the PDF specification a file conforms to."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:characterEncoding
+    a rdf:Property ;
+    rdfs:label "character encoding"@en ;
+    rdfs:comment "The character encoding used by a plain-text or structured-text file (e.g. UTF-8)."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:bitsPerSample
+    a rdf:Property ;
+    rdfs:label "bits per sample"@en ;
+    rdfs:comment "The number of bits used to represent each audio sample."@en ;
+    rdfs:range xsd:integer ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:bitrate
+    a rdf:Property ;
+    rdfs:label "bitrate"@en ;
+    rdfs:comment "The average bitrate of a compressed audio or video stream."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:encoder
+    a rdf:Property ;
+    rdfs:label "encoder"@en ;
+    rdfs:comment "The software used to encode a compressed audio file."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:frameRate
+    a rdf:Property ;
+    rdfs:label "frame rate"@en ;
+    rdfs:comment "The number of video frames captured or played back per second."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:videoCodec
+    a rdf:Property ;
+    rdfs:label "video codec"@en ;
+    rdfs:comment "The compression codec used to encode a file's video stream."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .
+
+arkivar:audioCodec
+    a rdf:Property ;
+    rdfs:label "audio codec"@en ;
+    rdfs:comment "The compression codec used to encode a file's audio stream."@en ;
+    rdfs:range xsd:string ;
+    rdfs:isDefinedBy <https://laugedideriksen.github.io/arkivar/ns/technical/v1#> .

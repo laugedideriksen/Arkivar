@@ -39,14 +39,6 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         )
         return 1
 
-    if not (args.project_path / "changelog.csv").is_file():
-        print(
-            f"arkivar ingest: {args.project_path} does not look like an initialised project.\n"
-            f"  Run 'arkivar init {args.project_path}' first.",
-            file=sys.stderr,
-        )
-        return 1
-
     try:
         ingest(args.source_path, args.project_path)
     except Exception as e:
@@ -57,22 +49,12 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
 def cmd_bag(args: argparse.Namespace) -> int:
     """Package a finished project directory as a BagIt bag."""
-    # bag_project() in main.py is currently a stub. Rather than exiting 0 having done
-    # nothing, fail loudly so this isn't mistaken for a completed bag.
-    print(
-        "arkivar bag: bagging is not yet implemented "
-        "(bag_project() in main.py is a placeholder).",
-        file=sys.stderr,
-    )
-    return 1
-    # Once bag_project() is implemented, replace the above with:
-    #
-    # try:
-    #     bag_project(args.project_path)
-    # except Exception as e:
-    #     print(f"arkivar bag: bagging failed: {e}", file=sys.stderr)
-    #     return 1
-    # return 0
+    try:
+        bag_project(args.project_path)
+    except Exception as e:
+        print(f"arkivar bag: bagging failed: {e}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -126,6 +108,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Target project directory (default: current directory).",
     )
     ingest_parser.set_defaults(func=cmd_ingest)
+
+    # --- requeue ---
+    requeue_parser = subparsers.add_parser(
+        "requeue-quarantine",
+        help="Reevaluate all quarantined files, e.g. after manually renaming, and pass through the remaining pipeline after successful validation",
+        description="Reevaluate quarantined files.",
+    )
+    requeue_parser.add_argument(
+        "project_path",
+        type=Path,
+        nargs="?",
+        defauslt=Path.cwd(),
+        help="Project directory to bag (default: current directory).",
+    )
 
     # --- bag ---
     bag_parser = subparsers.add_parser(

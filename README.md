@@ -15,7 +15,8 @@ Edit metadata.json with a text editor of your choice to contain all relevant pro
 Any unedited fields will be excluded from the generated sidecar files.
 Next, run `arkivar ingest [path_to_data_source] [path_to_project]` on any file or directory.
 If you need to ingest data from several sources, do it one at a time.
-Once everything has been ingested, run `arkivar bag [path_to_project]`.
+Once everything has been ingested, check the `quarantine/` directory for any files that failed file validation.
+To 'bag' a project, run `arkivar bag [path_to_project]`.
 This will not only place the project in an archivable `BagIt` bag, but also delete the `staging/` and `quaranting/` including any remaining content.
 
 ## Quickstart
@@ -36,3 +37,5 @@ When Arkivar maps an extracted field to RDF, it follows this order of preference
 2. Use `exif:` if the field is a standard EXIF 2.2 property.
 3. Use `nfo:` if the field has a defined Nepomuk File Ontology equivalent.
 4. Otherwise, use this vocabulary (`arkivar:`) as the fallback.
+
+## Installation and requirements

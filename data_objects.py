@@ -31,3 +31,14 @@ def create_filestate(
         base_name=file_name,
         status="NEW",
     )
+
+
+@dataclass
+class IngestReport:
+    ingested: list[Path] = field(default_factory=list)
+    quarantined: list[Path] = field(default_factory=list)
+    errored: list[tuple[Path, str]] = field(default_factory=list)
+
+    @property
+    def clean(self) -> bool:
+        return not self.quarantined and not self.errored

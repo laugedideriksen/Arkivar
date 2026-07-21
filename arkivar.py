@@ -1,5 +1,5 @@
 from datetime import date
-from data_objects import FileState
+from data_objects import FileState, IngestReport
 from log_writer import LogWriter
 from utils import (
     run_rsync,
@@ -12,10 +12,11 @@ from metadata import (
     write_sidecar,
     dc_template,
 )
-import os
 import json
 from pathlib import Path
 from typing import Optional
+import bagit
+import shutil
 
 
 def stage(data_source: FileState, logger: LogWriter, staging_dir: Path) -> FileState:
@@ -64,12 +65,14 @@ def quarantine(
     if data_source.status != "VALIDATION_FAILED":
         return data_source
 
-    filename = data_source.base_name
-    target_path = quarantine_dir / filename
+    target_dir = quarantine_dir / data_source.relative_source_path
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_path = target_dir / data_source.base_name
 
     success, msg = run_rsync(data_source.current_path, target_path)
 
     if success:
+        data_source.current_path.unlink()
         return logger.change_state(
             data_source,
             "QUARANTINE_FILE",
@@ -240,3 +243,52 @@ def finalise(logger: LogWriter) -> None:
         note="Ingestion finished. To verify new changelog checksum, first remove this row.",
     )
     pass
+
+
+def bag_project(
+    project_path: str | Path,
+    output_path: str | Path | None = None,
+    cleanup: str = "none",
+) -> Path:
+    """Package project_path's data/ as a BagIt bag, with metadata.json and changelog.csv as tag files."""
+
+    project_path = Path(project_path)
+    if output_path:
+        output_path = Path(output_path)
+    else:
+        output_path = project_path.parent / f"{project_path.name}_bag"
+
+    if output_path.exists():
+        raise FileExistsError(f"bag_project: output already exists at {output_path}")
+
+    shutil.copytree(project_path / "data", output_path)
+
+    bag = bagit.make_bag(output_path, checksums=["sha256"])
+
+    shutil.copy2(project_path / "metadata.json", output_path / "metadata.json")
+    shutil.copy2(project_path / "changelog.csv", output_path / "changelog.csv")
+    bag.save(manifests=True)
+
+    if cleanup == "none":
+        return output_path
+
+    if cleanup == "scratch":
+        for scratch_dir in ("staging", "quarantine"):
+            path = project_path / scratch_dir
+            if path.exists() and not any(path.iterdir()):
+                path.rmdir()
+            elif path.exists():
+                print(
+                    f"bag_project: {scratch_dir}/ is not empty — leaving it in place."
+                )
+        return output_path
+
+    if cleanup == "full":
+        if not bag.validate():
+            raise RuntimeError(
+                f"bag_project: bag at {output_path} failed validation — "
+                f"not removing {project_path}"
+            )
+        shutil.rmtree(project_path)
+
+    return output_path

@@ -85,7 +85,6 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
         print(f"quarantine/ already exists at {quarantine_dir}")
     else:
         os.makedirs(quarantine_dir, exist_ok=False)
-        print("quarantine/ created.")
         logger._write_log_entry(
             action_type="CREATE_QUARANTINE_DIR",
             path_before=None,
@@ -169,3 +168,19 @@ def init_dir(project_path: str | Path):
         and os.path.isfile(project_path / "metadata.json")
     ):
         print(f"{project_path} has been initialised.")
+
+
+def ensure_init(project_path: str | Path) -> bool:
+    project_path = Path(project_path)
+    if not (
+        os.path.isdir(project_path / "staging")
+        and os.path.isdir(project_path / "quarantine")
+        and os.path.isdir(project_path / "data")
+        and os.path.isfile(project_path / "changelog.csv")
+        and os.path.isfile(project_path / "metadata.json")
+    ):
+        raise Exception(
+            f"{project_path} doesn't seem to be initialised. Please run arkivar init {project_path}."
+        )
+    else:
+        return True
