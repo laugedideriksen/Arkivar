@@ -1,12 +1,14 @@
 # Arkivar
 
-_Arkivar_ is a programme for transparently ingesting and archiving files and directories.
+`Arkivar` is a programme for transparently ingesting and archiving files and directories.
 On ingesting a file, _Arkivar_ validates its filetype, extracts its metadata, creates a sidecar file in RDF/XML, and organises it in a `BagIt` compliant file structure.
 Every step is automatically documented in `changelog.csv`.
 `Arkivar` can also archive a project in the `BagIt` format.
 In that case, the changelog and project metadata files are included as tag-files.
 
 Although it is primarily intended to be used as a CLI application, _Arkivar_ can also be imported as a Python module.
+
+**NOTE**: Although functional, this tool is still under development, and many filetypes may still not parse correctly into RDF/XML.
 
 ## Intended Workflow
 
