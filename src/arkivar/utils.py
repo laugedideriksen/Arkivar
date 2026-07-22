@@ -1,7 +1,7 @@
 import json
 from datetime import date
 import puremagic
-from data_objects import FileState
+from .data_objects import FileState
 import subprocess
 from typing import Any, Optional, Tuple
 from pathlib import Path

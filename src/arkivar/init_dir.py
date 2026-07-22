@@ -1,8 +1,8 @@
 import os
 import csv
 import json
-from log_writer import LogWriter
-from metadata import dc_template
+from .log_writer import LogWriter
+from .metadata import dc_template
 from pathlib import Path
 
 

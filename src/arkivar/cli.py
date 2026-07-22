@@ -1,17 +1,8 @@
-"""Command-line interface for Arkivar.
-
-Typical workflow:
-    1. arkivar init PROJECT        Set up a new project directory.
-    2. Manually fill out PROJECT/metadata.json.
-    3. arkivar ingest SOURCE PROJECT   Ingest a file or directory into the project.
-    4. arkivar bag PROJECT         Package the finished project as a BagIt bag.
-"""
-
 import argparse
 import sys
 from pathlib import Path
-from init_dir import init_dir
-from main import ingest, bag_project, requeue_quarantine
+from .init_dir import init_dir
+from .main import ingest, bag_project, requeue_quarantine
 
 __version__ = "0.1.0"
 

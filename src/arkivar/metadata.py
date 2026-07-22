@@ -2,12 +2,12 @@ from datetime import datetime
 from rdflib import Graph, Namespace, Literal, URIRef
 from rdflib.namespace import DCTERMS
 from pathlib import Path
-from data_objects import FileState
-from log_writer import LogWriter
+from .data_objects import FileState
+from .log_writer import LogWriter
 from dataclasses import dataclass
 from typing import Optional, Any, Callable, Literal
 from enum import Enum
-from utils import resolve_created_date
+from .utils import resolve_created_date
 
 
 def dc_template() -> dict:

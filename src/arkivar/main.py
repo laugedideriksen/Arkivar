@@ -1,8 +1,8 @@
 import os
-import arkivar
-from log_writer import LogWriter
-from data_objects import FileState, create_filestate, IngestReport
-from init_dir import init_dir, ensure_init
+from . import pipeline as arkivar
+from .log_writer import LogWriter
+from .data_objects import FileState, create_filestate, IngestReport
+from .init_dir import ensure_init
 from pathlib import Path, PurePath
 
 
@@ -140,10 +140,3 @@ def bag_project(
     print(f"Project bagged at {bag_path}")
 
     return bag_path
-
-
-if __name__ == "__main__":
-    # init_dir("testdir")
-    # ingest("/home/ld/Documents/Coding/ongoingProjects/OnsetExtractor/data", "testdir")
-    # requeue_quarantine("testdir")
-    bag_project("testdir", cleanup="full")
