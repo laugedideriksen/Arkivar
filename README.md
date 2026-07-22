@@ -12,16 +12,16 @@ Although it is primarily intended to be used as a CLI application, _Arkivar_ can
 
 ## Intended Workflow
 
-Create a project directory.
-Initialise directory with `arkivar init [path_to_project]`; this will create three directories, `staging/`, `quarantine/`, and `data/`, as well as two files, `changelog.csv` and `metadata.json`.
+1. Create a project directory.
+2. Initialise directory with `arkivar init [path_to_project]`; this will create three directories, `staging/`, `quarantine/`, and `data/`, as well as two files, `changelog.csv` and `metadata.json`.
 If any of these already exists, they will not be overwritten.
-Edit metadata.json with a text editor of your choice to contain all relevant project information.
+3. Edit metadata.json with a text editor of your choice to contain all relevant project information.
 Any unedited fields will be excluded from the generated sidecar files.
-Next, run `arkivar ingest [path_to_data_source] [path_to_project]` on any file or directory.
+4. Run `arkivar ingest [path_to_data_source] [path_to_project]` on any file or directory.
 If you need to ingest data from several sources, do it one at a time.
-Once everything has been ingested, `arkivar requeue [path_to_project]` checks the `quarantine/` directory for any files that failed file validation.
+5. Once everything has been ingested, `arkivar requeue [path_to_project]` checks the `quarantine/` directory for any files that failed file validation.
 Files that now pass, e.g. because their file extensions have been manually changed, are passed through the remaining pipeline.
-To 'bag' a project, run `arkivar bag [path_to_project]`.
+6. To 'bag' a project, run `arkivar bag [path_to_project]`.
 `arkivar bag` has the flag `--cleanup`, which takes one of three arguments: `none` (default), `scratch`, and `full`. 
 `none` does nothing; `scratch` deletes `staging/` and `quarantine/` if they are empty; `full` deletes the entire ingest directory once the bagged version is validated.
 
