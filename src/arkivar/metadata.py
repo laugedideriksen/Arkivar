@@ -5,7 +5,8 @@ from pathlib import Path
 from .data_objects import FileState
 from .log_writer import LogWriter
 from dataclasses import dataclass
-from typing import Optional, Any, Callable, Literal
+from typing import Optional, Any, Callable
+from typing import Literal as typingLiteral
 from enum import Enum
 from .utils import resolve_created_date
 
@@ -61,7 +62,7 @@ class FieldDefinition:
     key: str
     namespace: Optional[Namespace] = None
     transform: Optional[Callable[[str], Any]] = None
-    merge: Literal["append", "replace"] = "append"
+    merge: typingLiteral["append", "replace"] = "append"
 
 
 def _parse_exif_datetime(value: str) -> str:
