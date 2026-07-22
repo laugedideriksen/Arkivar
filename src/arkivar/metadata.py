@@ -423,11 +423,11 @@ def exiftool_fields_for(suffix: str) -> list[str]:
 
 
 def _apply_exif_fields(
-        dc: dict[str, list[str]],
-        technical: dict[tuple[Namespace, str], Any],
-        exif_data: dict,
-        suffix: str,
-        ) -> None:
+    dc: dict[str, list[str]],
+    technical: dict[tuple[Namespace, str], Any],
+    exif_data: dict,
+    suffix: str,
+) -> None:
     for group in FILETYPE_GROUPS[suffix]:
         for file_definition in FIELD_REGISTRY[group]:
             raw_exif_value = exif_data.get(file_definition.exif_field)
@@ -435,10 +435,10 @@ def _apply_exif_fields(
                 continue
 
             value = (
-                    file_definition.transform(raw_exif_value)
-                    if file_definition.transform
-                    else raw_exif_value
-                    )
+                file_definition.transform(raw_exif_value)
+                if file_definition.transform
+                else raw_exif_value
+            )
             if value is None:
                 continue
 
@@ -453,7 +453,10 @@ def _apply_exif_fields(
             else:
                 technical[(file_definition.namespace, file_definition.key)] = value
 
-def _write_project_title_to_is_part_of(dc: dict[str, list[str]], project_metadata: dict) -> None:
+
+def _write_project_title_to_is_part_of(
+    dc: dict[str, list[str]], project_metadata: dict
+) -> None:
     project_titles = project_metadata.get("titles", [])
     existing = dc.setdefault("isPartOf", [])
     for title in project_titles:
@@ -469,10 +472,9 @@ def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
     _write_project_title_to_is_part_of(dc, project_metadata)
 
     return {"dublin_core": dc, "technical_information": technical}
-    
 
 
-#def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
+# def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
 #    dc = dict(project_metadata)
 #    technical = {}
 #

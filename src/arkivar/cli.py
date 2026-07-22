@@ -144,10 +144,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Project directory to bag (default: current directory).",
     )
     bag_parser.add_argument(
-    "--cleanup",
-    choices=["none", "scratch", "full"],
-    default="none",
-    help="What to remove after a successful bag: 'none' leaves staging/, quarantine/, and the project directory untouched (default); 'scratch' removes staging/ and quarantine/ only if they're already empty; 'full' deletes the entire project directory, including metadata.json and changelog.csv, once the bag has been validated.",
+        "--cleanup",
+        choices=["none", "scratch", "full"],
+        default="none",
+        help="What to remove after a successful bag: 'none' leaves staging/, quarantine/, and the project directory untouched (default); 'scratch' removes staging/ and quarantine/ only if they're already empty; 'full' deletes the entire project directory, including metadata.json and changelog.csv, once the bag has been validated.",
     )
     bag_parser.set_defaults(func=cmd_bag)
 
