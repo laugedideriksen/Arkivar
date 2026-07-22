@@ -66,7 +66,7 @@ def cmd_requeue(args: argparse.Namespace) -> int:
 def cmd_bag(args: argparse.Namespace) -> int:
     """Package a finished project directory as a BagIt bag."""
     try:
-        bag_project(args.project_path)
+        bag_project(args.project_path, cleanup=args.cleanup)
     except Exception as e:
         print(f"arkivar bag: bagging failed: {e}", file=sys.stderr)
         return 1
@@ -138,6 +138,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path.cwd(),
         help="Project directory to bag (default: current directory).",
     )
+    requeue_parser.set_defaults(func=cmd_requeue)
 
     # --- bag ---
     bag_parser = subparsers.add_parser(
@@ -151,6 +152,12 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=Path.cwd(),
         help="Project directory to bag (default: current directory).",
+    )
+    bag_parser.add_argument(
+    "--cleanup",
+    choices=["none", "scratch", "full"],
+    default="none",
+    help="What to remove after a successful bag: 'none' leaves staging/, quarantine/, and the project directory untouched (default); 'scratch' removes staging/ and quarantine/ only if they're already empty; 'full' deletes the entire project directory, including metadata.json and changelog.csv, once the bag has been validated.",
     )
     bag_parser.set_defaults(func=cmd_bag)
 
