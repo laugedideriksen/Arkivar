@@ -9,3 +9,6 @@ dependencies = [
     "puremagic>=2.2.0",
     "rdflib>=7.6.0",
 ]
+
+[project.scripts]
+arkivar = "arkivar.cli:main"
