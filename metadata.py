@@ -5,7 +5,7 @@ from pathlib import Path
 from data_objects import FileState
 from log_writer import LogWriter
 from dataclasses import dataclass
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, Literal
 from enum import Enum
 from utils import resolve_created_date
 
@@ -56,11 +56,12 @@ class Target(Enum):
 
 @dataclass(frozen=True)
 class FieldDefinition:
-    exif_field: str  # exiftool's field name, e.g. "Date/Time Original"
+    exif_field: str
     target: Target
-    key: str  # DC key or technical predicate local name
-    namespace: Optional[Namespace] = None  # only used when target is TECHNICAL
-    transform: Optional[Callable[[str], Any]] = None  # optional value normalizer
+    key: str
+    namespace: Optional[Namespace] = None
+    transform: Optional[Callable[[str], Any]] = None
+    merge: Literal["append", "replace"] = "append"
 
 
 def _parse_exif_datetime(value: str) -> str:
@@ -85,7 +86,7 @@ def _to_float(value: str | int | float) -> Optional[float]:
 FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     # --- shared across (almost) everything ---
     "common": [
-        FieldDefinition("File:FileName", Target.DUBLIN_CORE, "titles"),
+        FieldDefinition("File:FileName", Target.DUBLIN_CORE, "titles", merge="replace"),
         FieldDefinition("File:FileType", Target.DUBLIN_CORE, "formats"),
     ],
     "file_stats": [
@@ -398,6 +399,7 @@ DC_TEMPLATE_TO_DCTERMS = {
     "descriptions": DCTERMS.description,
     "formats": DCTERMS.format,
     "identifiers": DCTERMS.identifier,
+    "isPartOf": DCTERMS.isPartOf,
     "languages": DCTERMS.language,
     "publishers": DCTERMS.publisher,
     "relations": DCTERMS.relation,
@@ -420,29 +422,79 @@ def exiftool_fields_for(suffix: str) -> list[str]:
     ]
 
 
-def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
-    dc = dict(project_metadata)
-    technical = {}
-
+def _apply_exif_fields(
+        dc: dict[str, list[str]],
+        technical: dict[tuple[Namespace, str], Any],
+        exif_data: dict,
+        suffix: str,
+        ) -> None:
     for group in FILETYPE_GROUPS[suffix]:
         for file_definition in FIELD_REGISTRY[group]:
             raw_exif_value = exif_data.get(file_definition.exif_field)
             if raw_exif_value is None:
                 continue
+
             value = (
-                file_definition.transform(raw_exif_value)
-                if file_definition.transform
-                else raw_exif_value
-            )
+                    file_definition.transform(raw_exif_value)
+                    if file_definition.transform
+                    else raw_exif_value
+                    )
             if value is None:
                 continue
 
             if file_definition.target is Target.DUBLIN_CORE:
-                dc[file_definition.key] = [str(value)]
+                str_value = str(value)
+                if file_definition.merge == "replace":
+                    dc[file_definition.key] = [str_value]
+                else:
+                    existing = dc.setdefault(file_definition.key, [])
+                    if str_value not in existing:
+                        existing.append(str_value)
             else:
                 technical[(file_definition.namespace, file_definition.key)] = value
 
+def _write_project_title_to_is_part_of(dc: dict[str, list[str]], project_metadata: dict) -> None:
+    project_titles = project_metadata.get("titles", [])
+    existing = dc.setdefault("isPartOf", [])
+    for title in project_titles:
+        if title and title not in existing:
+            existing.append(title)
+
+
+def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
+    dc = {key: list(values) for key, values in project_metadata.items()}
+    technical = {}
+
+    _apply_exif_fields(dc, technical, exif_data, suffix)
+    _write_project_title_to_is_part_of(dc, project_metadata)
+
     return {"dublin_core": dc, "technical_information": technical}
+    
+
+
+#def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
+#    dc = dict(project_metadata)
+#    technical = {}
+#
+#    for group in FILETYPE_GROUPS[suffix]:
+#        for file_definition in FIELD_REGISTRY[group]:
+#            raw_exif_value = exif_data.get(file_definition.exif_field)
+#            if raw_exif_value is None:
+#                continue
+#            value = (
+#                file_definition.transform(raw_exif_value)
+#                if file_definition.transform
+#                else raw_exif_value
+#            )
+#            if value is None:
+#                continue
+#
+#            if file_definition.target is Target.DUBLIN_CORE:
+#                dc[file_definition.key] = [str(value)]
+#            else:
+#                technical[(file_definition.namespace, file_definition.key)] = value
+#
+#    return {"dublin_core": dc, "technical_information": technical}
 
 
 def build_sidecar_graph(data_source: FileState, sidecar: dict) -> Graph:
