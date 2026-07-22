@@ -10,7 +10,6 @@ Typical workflow:
 import argparse
 import sys
 from pathlib import Path
-
 from init_dir import init_dir
 from main import ingest, bag_project, requeue_quarantine
 

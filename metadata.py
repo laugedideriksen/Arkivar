@@ -1,5 +1,4 @@
 from datetime import datetime
-from uuid import uuid4
 from rdflib import Graph, Namespace, Literal, URIRef
 from rdflib.namespace import DCTERMS
 from pathlib import Path

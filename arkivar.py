@@ -1,5 +1,5 @@
 from datetime import date
-from data_objects import FileState, IngestReport
+from data_objects import FileState
 from log_writer import LogWriter
 from utils import (
     run_rsync,

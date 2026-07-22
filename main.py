@@ -1,6 +1,5 @@
 import os
 import arkivar
-import shutil
 from log_writer import LogWriter
 from data_objects import FileState, create_filestate, IngestReport
 from init_dir import init_dir, ensure_init

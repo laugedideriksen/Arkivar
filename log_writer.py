@@ -3,7 +3,6 @@ import os
 from datetime import datetime, date
 from hashlib import sha256
 from data_objects import FileState
-from typing import Optional
 from dataclasses import replace
 from pathlib import Path
 
