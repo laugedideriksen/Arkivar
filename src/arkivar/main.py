@@ -4,6 +4,7 @@ from .log_writer import LogWriter
 from .data_objects import FileState, create_filestate, IngestReport
 from .init_dir import ensure_init
 from pathlib import Path, PurePath
+from tqdm import tqdm
 
 
 def _ingest_file(
@@ -50,7 +51,7 @@ def _ingest_directory(
     ingestion_root = Path(source_path).resolve()
     report = IngestReport()
 
-    for file_path in ingestion_root.rglob("*"):
+    for file_path in tqdm(ingestion_root.rglob("*"), ascii=True):
         if file_path.is_file():
             relative_path = file_path.relative_to(ingestion_root).parent
             data_source = create_filestate(file_path, relative_path)
