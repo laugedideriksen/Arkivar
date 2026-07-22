@@ -43,4 +43,6 @@ When Arkivar maps an extracted field to RDF, it follows this order of preference
 4. Otherwise, use this vocabulary (`arkivar:`) as the fallback.
 
 ## Installation and requirements
+`Arkivar` is currently only tested on Linux.
 In addition to Python 3.14 or above, `Arkivar` requires the modules `bagit`, `puremagic`, and `rdflib`.
+It also requires the CLI tools `rsync` and `exiftool` to be available on `PATH`.

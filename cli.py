@@ -46,6 +46,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         return 1
     return 0
 
+
 def cmd_requeue(args: argparse.Namespace) -> int:
     if not args.project_path.exists():
         print(

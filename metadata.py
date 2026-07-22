@@ -71,7 +71,7 @@ def _parse_exif_datetime(value: str) -> str:
 def _to_int(value: str | int | float) -> Optional[int]:
     try:
         return int(float(value))
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
 
 
@@ -79,7 +79,7 @@ def _to_int(value: str | int | float) -> Optional[int]:
 def _to_float(value: str | int | float) -> Optional[float]:
     try:
         return float(value)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
 
 

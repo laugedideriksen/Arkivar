@@ -203,17 +203,20 @@ def organise(
 
     if not file_success:
         return logger.change_state(
-                data_source, "ERROR", staged_file_path, note=f"Rsync FAIL: {file_msg}")
+            data_source, "ERROR", staged_file_path, note=f"Rsync FAIL: {file_msg}"
+        )
 
-    sidecar_success, sidecar_msg = run_rsync(
-            data_source.sidecar_path, sidecar_target
-            )
+    sidecar_success, sidecar_msg = run_rsync(data_source.sidecar_path, sidecar_target)
 
     if not sidecar_success:
         if file_target.exists():
             file_target.unlink()
         return logger.change_state(
-                data_source, "ERROR", staged_sidecar_path, note=f"Rsync FAIL: {sidecar_msg}; file copy has been rolled back.")
+            data_source,
+            "ERROR",
+            staged_sidecar_path,
+            note=f"Rsync FAIL: {sidecar_msg}; file copy has been rolled back.",
+        )
 
     staged_file_path.unlink()
     staged_sidecar_path.unlink()
