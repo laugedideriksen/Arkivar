@@ -117,7 +117,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # --- requeue ---
     requeue_parser = subparsers.add_parser(
-        "requeue-quarantine",
+        "requeue",
         help="Reevaluate all quarantined files, e.g. after manually renaming, and pass through the remaining pipeline after successful validation",
         description="Reevaluate quarantined files.",
     )

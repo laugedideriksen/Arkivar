@@ -33,7 +33,7 @@ mkdir ~/project
 arkivar init ~/project/
 vi ~/project/metadata.json
 arkivar ingest /media/user/sd1/ ~/project/
-arkivar bag ~/project/
+arkivar bag --cleanup full ~/project/
 ```
 
 ## Namespace Selection
