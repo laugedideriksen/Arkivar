@@ -171,15 +171,15 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     ],
     "lossless_image": [  # PNG, TIFF, BMP, WebP — format facts, no EXIF exposure data
         FieldDefinition(
-            "BitDepth",
+            "PNG:BitDepth",
             Target.TECHNICAL,
             "colorDepth",
             namespace=NFO,
             transform=_to_int,
         ),
-        FieldDefinition("ColorType", Target.TECHNICAL, "colorType", namespace=ARKIVAR),
+        FieldDefinition("PNG:ColorType", Target.TECHNICAL, "colorType", namespace=ARKIVAR),
         FieldDefinition(
-            "Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR
+        "PNG:Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR
         ),
     ],
     # --- documents ---
@@ -205,28 +205,28 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     "office_document": [  # DOCX, ODT, RTF
         FieldDefinition("Author", Target.DUBLIN_CORE, "creators"),
         FieldDefinition(
-            "PageCount",
+            "XMLPages",
             Target.TECHNICAL,
             "pageCount",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "WordCount",
+            "XML:Words",
             Target.TECHNICAL,
             "wordCount",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "CharacterCount",
+            "XML:Characters",
             Target.TECHNICAL,
             "characterCount",
             namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
-            "Application", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR
+            "XML:Application", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR
         ),
     ],
     "plain_text": [
