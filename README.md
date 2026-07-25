@@ -1,7 +1,7 @@
 # Arkivar
 
 `Arkivar` is a CLI tool for transparently ingesting and archiving files and directories.
-On ingesting a file, _Arkivar_ validates its filetype, extracts its metadata, creates a sidecar file in RDF/XML, and organises it in a `BagIt` compliant file structure.
+On ingesting a file, _Arkivar_ validates its filetype, extracts its metadata, creates a sidecar file in RDF/XML, and organises it in a `BagIt` compliant file structure, sorted by creation date.
 Every step is automatically documented in `changelog.csv`.
 `Arkivar` can also archive a project in the `BagIt` format.
 In that case, the changelog and project metadata files are included as tag-files.
@@ -19,6 +19,7 @@ If any of these already exists, they will not be overwritten.
 Any unedited fields will be excluded from the generated sidecar files.
 4. Run `arkivar ingest [path_to_data_source] [path_to_project]` on any file or directory.
 If you need to ingest data from several sources, do it one at a time.
+Any files that fail validation will be moved to the `quarantine/` directory.
 5. Once everything has been ingested, `arkivar requeue [path_to_project]` checks the `quarantine/` directory for any files that failed file validation.
 Files that now pass, e.g. because their file extensions have been manually changed, are passed through the remaining pipeline.
 6. To 'bag' a project, run `arkivar bag [path_to_project]`.
@@ -44,7 +45,7 @@ When Arkivar maps an extracted field to RDF, it follows this order of preference
 3. Use `nfo:` if the field has a defined Nepomuk File Ontology equivalent.
 4. Otherwise, use this vocabulary (`arkivar:`) as the fallback.
 
-## Installation and requirements
+## Installation and Requirements
 `Arkivar` is currently only tested on Linux.
 In addition to Python 3.10 or newer, `Arkivar` requires the modules `bagit`, `puremagic`, and `rdflib`.
 It also requires the CLI tools `rsync` and `exiftool` to be available on `PATH`.
