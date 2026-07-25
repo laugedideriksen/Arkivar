@@ -30,7 +30,7 @@ Files that now pass, e.g. because their file extensions have been manually chang
 ```bash
 mkdir ~/project
 arkivar init ~/project/
-# edit ~/project/metadata.json
+vi ~/project/metadata.json
 arkivar ingest /media/user/sd1/ ~/project/
 arkivar bag ~/project/
 ```
@@ -48,3 +48,5 @@ When Arkivar maps an extracted field to RDF, it follows this order of preference
 `Arkivar` is currently only tested on Linux.
 In addition to Python 3.10 or newer, `Arkivar` requires the modules `bagit`, `puremagic`, and `rdflib`.
 It also requires the CLI tools `rsync` and `exiftool` to be available on `PATH`.
+
+The easiest way to install `Arkivar` is with `uv`, by running `uv tool install .` in the repository folder.
