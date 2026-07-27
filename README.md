@@ -2,7 +2,7 @@
 
 `Arkivar` is a CLI tool for transparently ingesting and archiving files and directories.
 On ingesting a file, `Arkivar` validates its filetype and extracts its metadata.
-The extracted metadata is merged with the contents of `metadata.json` and writte to a sidecar file in RDF/XML.
+The extracted metadata is merged with the contents of `metadata.json` and written to a sidecar file in RDF/XML.
 Finally, all validated files and their sidecars are organised in a `BagIt` compliant file structure, sorted by creation date.
 Every step is automatically documented in `changelog.csv`.
 `Arkivar` can also archive a project in the `BagIt` format.
