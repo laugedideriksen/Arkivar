@@ -9,6 +9,7 @@ from pathlib import Path
 
 class LogWriter:
     """LogWriter contains methods for updating the state of a data object, as well as writing directly to changelog.csv."""
+
     def __init__(
         self,
         log_file: Path = Path("changelog.csv"),
