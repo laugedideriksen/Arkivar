@@ -10,6 +10,7 @@ from tqdm import tqdm
 def _ingest_file(
     source: FileState | Path, project_path: Path, logger: LogWriter
 ) -> FileState:
+    """Pass a single file through the ingestion pipeline"""
     if isinstance(source, PurePath):
         data_source = create_filestate(source)
     else:
@@ -37,6 +38,7 @@ def _ingest_file(
 
 
 def _classify(data_source: FileState, report: IngestReport) -> None:
+    """Identify end state of data object after ingestion attempt, and log that in IngestReport."""
     if data_source.status == "ERROR":
         report.errored.append((data_source.current_path, data_source.status))
     elif data_source.status == "QUARANTINED":
@@ -48,6 +50,7 @@ def _classify(data_source: FileState, report: IngestReport) -> None:
 def _ingest_directory(
     source_path: str | Path, project_path: Path, logger: LogWriter
 ) -> IngestReport:
+    """Pass the contents of a directory through the ingest pipeline."""
     ingestion_root = Path(source_path).resolve()
     report = IngestReport()
 
@@ -61,6 +64,7 @@ def _ingest_directory(
 
 
 def ingest(source_path: str | Path, project_path: str | Path) -> IngestReport:
+    """Orchestrator function for ingesting files and directories."""
     source_path = Path(source_path).resolve()
     project_path = Path(project_path).resolve()
     logger = LogWriter(project_path / "changelog.csv")
@@ -133,6 +137,7 @@ def bag_project(
     output_path: str | Path | None = None,
     cleanup: str = "none",
 ) -> Path:
+    """Place project in BagIt bag, with changelog.csv and metadata.json as tag files."""
     project_path = Path(project_path)
     if output_path:
         output_path = Path(output_path)

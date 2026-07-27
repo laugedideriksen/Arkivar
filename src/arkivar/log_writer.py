@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 class LogWriter:
+    """LogWriter contains methods for updating the state of a data object, as well as writing directly to changelog.csv."""
     def __init__(
         self,
         log_file: Path = Path("changelog.csv"),
@@ -37,6 +38,7 @@ class LogWriter:
         sidecar_path: Path | None = None,
         created_date: date | None = None,
     ) -> "FileState":
+        """Document the state change of a data object by logging its new state and outputting an updated FileState object."""
         timestamp = datetime.now().strftime(self.dt_format)
         path_before_action = state.current_path
         hash_before_action = state.current_hash or "N/A"
@@ -92,9 +94,7 @@ class LogWriter:
         new_hash: str | None = None,
         note: str = "",
     ) -> None:
-
-        #        self._ensure_init()
-
+        """Internal method to write log entry without a FileState object."""
         with open(self.log_file, mode="a", newline="") as f:
             writer = csv.writer(f)
 

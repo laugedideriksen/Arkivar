@@ -177,9 +177,11 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
             namespace=NFO,
             transform=_to_int,
         ),
-        FieldDefinition("PNG:ColorType", Target.TECHNICAL, "colorType", namespace=ARKIVAR),
         FieldDefinition(
-        "PNG:Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR
+            "PNG:ColorType", Target.TECHNICAL, "colorType", namespace=ARKIVAR
+        ),
+        FieldDefinition(
+            "PNG:Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR
         ),
     ],
     # --- documents ---

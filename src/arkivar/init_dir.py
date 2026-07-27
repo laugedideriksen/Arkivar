@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 def _create_changelog(project_path: Path) -> LogWriter:
+    """Create changelog.csv and add a header row"""
     log_file = project_path / "changelog.csv"
 
     if log_file.exists():
@@ -51,6 +52,7 @@ def _create_changelog(project_path: Path) -> LogWriter:
 
 
 def _create_dirs(project_path: Path, logger: LogWriter) -> None:
+    """Create the directories staging/, quarantine/, and data/, insofar as they do not already exist."""
     staging_dir = project_path / "staging"
     quarantine_dir = project_path / "quarantine"
     data_dir = project_path / "data"
@@ -116,6 +118,7 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
 
 
 def _create_metadata_template(project_path: Path, logger: LogWriter):
+    """Create metadata.json and populate with Dublin Core field descriptions."""
     metadata_temp = project_path / "metadata.json"
     dc_dict = dc_template()
 
@@ -141,6 +144,7 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
 
 
 def init_dir(project_path: str | Path):
+    """Initialise a given directory by creating directories, changelog.csv, and metadata.json."""
     project_path = Path(project_path).resolve()
 
     if not project_path.exists():
@@ -171,6 +175,7 @@ def init_dir(project_path: str | Path):
 
 
 def ensure_init(project_path: str | Path) -> bool:
+    """Ensure that a directory is initialised by checking for the existence of staging/, quarantine/, data/, changelog.csv, and metadata.json."""
     project_path = Path(project_path)
     if not (
         os.path.isdir(project_path / "staging")

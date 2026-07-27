@@ -8,6 +8,7 @@ from datetime import date
 
 @dataclass(frozen=True)
 class FileState:
+    """Dataclass containing information on a data object."""
     source_path: Path
     relative_source_path: Path  # path relative to the directory being ingested.
     current_path: Path
