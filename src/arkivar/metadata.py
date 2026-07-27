@@ -21,7 +21,7 @@ def dc_template() -> dict:
         ],
         creators=["An entity primarily responsible for making the resource."],
         dates=[
-            "A point or period of time associated with an event in the lifecycle of the resource."
+            "A point or period of time associated with an event in the lifecycle of the resource. Please use YYYY-MM-DD (ISO 8601)."
         ],
         descriptions=[
             "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource."
@@ -186,7 +186,6 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     ],
     # --- documents ---
     "document": [
-        FieldDefinition("PDF:Creator", Target.DUBLIN_CORE, "creators"),
         FieldDefinition(
             "XMP:Producer", Target.TECHNICAL, "producer", namespace=ARKIVAR
         ),
