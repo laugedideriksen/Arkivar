@@ -1,7 +1,7 @@
 # Arkivar
 
 `Arkivar` is a CLI tool for transparently ingesting and archiving files and directories.
-On ingesting a file, _Arkivar_ validates its filetype, extracts its metadata, creates a sidecar file in RDF/XML, and organises it in a `BagIt` compliant file structure, sorted by creation date.
+On ingesting a file, `Arkivar` validates its filetype, extracts its metadata, creates a sidecar file in RDF/XML, and organises it in a `BagIt` compliant file structure, sorted by creation date.
 Every step is automatically documented in `changelog.csv`.
 `Arkivar` can also archive a project in the `BagIt` format.
 In that case, the changelog and project metadata files are included as tag-files.
