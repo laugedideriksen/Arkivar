@@ -222,7 +222,7 @@ def organise(
     staged_sidecar_path.unlink()
 
     logger._write_log_entry(
-        action_type="SIDECAR_MOVED",
+        action_type="MOVE_SIDECAR",
         path_before=data_source.sidecar_path,
         path_after=sidecar_target,
         note=f"Rsync OK: {sidecar_msg}",
