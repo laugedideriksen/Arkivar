@@ -1,0 +1,105 @@
+{
+  "id": "dcterms",
+  "prefix": "dcterms",
+  "namespace_uri": "http://purl.org/dc/terms/",
+  "terms": [
+    {
+      "local_name": "contributors",
+      "label": "An entity responsible for making contributions to the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/contributor"
+    },
+    {
+      "local_name": "coverage",
+      "label": "The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction under which the resource is relevant.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/coverage"
+    },
+    {
+      "local_name": "creators",
+      "label": "An entity primarily responsible for making the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/creator"
+    },
+    {
+      "local_name": "dates",
+      "label": "A point or period of time associated with an event in the lifecycle of the resource. Please use YYYY-MM-DD (ISO 8601).",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/date"
+    },
+    {
+      "local_name": "descriptions",
+      "label": "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/description"
+    },
+    {
+      "local_name": "formats",
+      "label": "The file format, physical medium, or dimensions of the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/format"
+    },
+    {
+      "local_name": "identifiers",
+      "label": "An unambiguous reference to the resource within a given context. Recommended best practice is to identify the resource by means of a string conforming to a formal identification system.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/identifier"
+    },
+    {
+      "local_name": "isPartOf",
+      "label": "A related resource in which the described resource is physically or logically included. Populated automatically from the project title -- no need to fill this in by hand.",
+      "obligation": "optional",
+      "repeatable": true,
+      "term_uri": "http://purl.org/dc/terms/isPartOf"
+    },
+    {
+      "local_name": "languages",
+      "label": "A language of the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/language"
+    },
+    {
+      "local_name": "publishers",
+      "label": "An entity responsible for making the resource available.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/publisher"
+    },
+    {
+      "local_name": "relations",
+      "label": "A related resource. Recommended practice is to identify the related resource by means of a URI. If this is not possible or feasible, a string conforming to a formal identification system may be provided.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/relation"
+    },
+    {
+      "local_name": "rights",
+      "label": "Information about rights held in and over the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/rights"
+    },
+    {
+      "local_name": "sources",
+      "label": "A related resource from which the described resource is derived.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/source"
+    },
+    {
+      "local_name": "subject",
+      "label": "The topic of the resource. Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/subject"
+    },
+    {
+      "local_name": "titles",
+      "label": "A name given to the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/title"
+    },
+    {
+      "local_name": "types",
+      "label": "The nature or genre of the resource.",
+      "obligation": "recommended",
+      "term_uri": "http://purl.org/dc/terms/type"
+    }
+  ],
+  "events": []
+}
