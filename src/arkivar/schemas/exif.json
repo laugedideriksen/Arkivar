@@ -1,0 +1,51 @@
+{
+  "_comment": "The subset of the W3C EXIF RDF Schema (http://www.w3.org/2003/12/exif/) that Arkivar's FIELD_REGISTRY currently extracts from camera-originated images.",
+  "id": "exif",
+  "prefix": "exif",
+  "namespace_uri": "http://www.w3.org/2003/12/exif/ns#",
+  "terms": [
+    {
+      "local_name": "shutterSpeed",
+      "label": "The shutter speed used to capture the image.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "fNumber",
+      "label": "The f-number (aperture) used to capture the image.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "ISO",
+      "label": "The ISO sensitivity setting used to capture the image.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "flash",
+      "label": "Whether and how flash fired when the image was captured.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "focalLengthIn35mmEquivalent",
+      "label": "The lens focal length used, expressed as a 35mm-equivalent.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "cameraMake",
+      "label": "The manufacturer of the camera used to capture the image.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "cameraModel",
+      "label": "The model of the camera used to capture the image.",
+      "obligation": "optional",
+      "repeatable": false
+    }
+  ],
+  "events": []
+}
