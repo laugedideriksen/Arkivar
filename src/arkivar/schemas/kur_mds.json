@@ -1,0 +1,230 @@
+{
+  "_comment": "KuR-MDS: Metadatenschema für die Dokumentation von Konservierungs- und Restaurierungsmaßnahmen, Fischer et al., v1.0, September 2026 (NFDI4Objects).",
+  "id": "kur_mds",
+  "prefix": "kur",
+  "namespace_uri": "https://www.w3id.org/conservation/terms/metadata/",
+  "terms": [
+    {
+      "local_name": "objektkennzeichnung.objektbenennung",
+      "label": "A name or designation for the object (e.g. object type or common name).",
+      "obligation": "mandatory",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/B5DD1A"
+    },
+    {
+      "local_name": "objektkennzeichnung.kennzeichnungsnummer",
+      "label": "The object's primary identification/inventory number.",
+      "obligation": "mandatory",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/F7D3DB"
+    },
+    {
+      "local_name": "objektkennzeichnung.artDerKennzeichnungsnummer",
+      "label": "The type or system the identification number above belongs to (e.g. inventory number, accession number).",
+      "obligation": "mandatory",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/G59SR3"
+    },
+    {
+      "local_name": "objektkennzeichnung.weitereObjektnummer",
+      "label": "An additional object number, if one exists (e.g. a loan or excavation number).",
+      "obligation": "optional",
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/K343FVC"
+    },
+    {
+      "local_name": "objektkennzeichnung.artDerWeiterenObjektnummer",
+      "label": "The type of the additional object number given above. Fill in only if that field is used.",
+      "obligation": "conditional",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/LGPT6AC"
+    },
+    {
+      "local_name": "objektkennzeichnung.datierung",
+      "label": "The dating of the object.",
+      "obligation": "recommended",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/F9GB13"
+    },
+    {
+      "local_name": "objektkennzeichnung.herkunft",
+      "label": "The object's origin or provenance.",
+      "obligation": "recommended",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/CD3341"
+    },
+    {
+      "local_name": "objektkennzeichnung.eingangsdatum",
+      "label": "The date the object was accessioned/received by the holding institution. Use ISO 8601 (YYYY-MM-DD).",
+      "obligation": "conditional",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/F2A45F"
+    },
+    {
+      "local_name": "objektkennzeichnung.standort",
+      "label": "The object's current location.",
+      "obligation": "mandatory",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/FC3322"
+    },
+    {
+      "local_name": "objektkennzeichnung.ansprechpartner",
+      "label": "A contact person for questions about the object.",
+      "obligation": "optional",
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/F3G8D1"
+    },
+    {
+      "local_name": "objektkennzeichnung.schoepfer",
+      "label": "The object's creator/maker, if known.",
+      "obligation": "optional",
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/G76A78"
+    },
+    {
+      "local_name": "objektkennzeichnung.objektbeziehung",
+      "label": "A relationship to another object or record (e.g. part of a set).",
+      "obligation": "conditional",
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/GB6DF3"
+    },
+    {
+      "local_name": "objektbeschreibung.objekttyp",
+      "label": "The type or category of object.",
+      "obligation": "mandatory",
+      "repeatable": false,
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/F1BA31"
+    },
+    {
+      "local_name": "objektbeschreibung.weitereObjekteigenschaften",
+      "label": "Free-text notes on additional physical characteristics not captured elsewhere (e.g. shape, an illegible signature).",
+      "obligation": "optional",
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/BGC9F3"
+    },
+    {
+      "local_name": "objektbeschreibung.objektmaterial",
+      "label": "The material(s) the object is made of. Where possible, link to a controlled-vocabulary term (e.g. Getty AAT, GND, or the conservation thesaurus) rather than a bare string -- see the 'label (uri)' convention in schema.py's docstring.",
+      "obligation": "mandatory",
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/D866AD"
+    },
+    {
+      "local_name": "objektbeschreibung.herstellungstechnik",
+      "label": "The manufacturing or fabrication technique used to make the object.",
+      "obligation": "recommended",
+      "term_uri": "https://www.w3id.org/conservation/terms/metadata/C4BCF8"
+    }
+  ],
+  "events": [
+    {
+      "id": "zustandserfassung",
+      "label": "Zustandserfassung (condition assessment)",
+      "predicate_local_name": "hasZustandserfassung",
+      "identifier_term": "kennungDerZustandserfassung",
+      "terms": [
+        {
+          "local_name": "kennungDerZustandserfassung",
+          "label": "A unique, persistent identifier for this condition assessment (e.g. an internal case number or a PID). Also seeds this assessment's RDF resource URI -- see schema.py.",
+          "obligation": "mandatory",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/R48T23"
+        },
+        {
+          "local_name": "anlassDerZustandserfassung",
+          "label": "Why this assessment was carried out (e.g. initial accessioning, pre-treatment documentation, routine monitoring, loan preparation).",
+          "obligation": "conditional",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/G5TA85"
+        },
+        {
+          "local_name": "anlassDerZustandserfassung.erfassungszeitpunkt",
+          "label": "Where this assessment sits in the treatment timeline (e.g. before/during/after treatment, or independent monitoring).",
+          "obligation": "conditional",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/A8ABBA"
+        },
+        {
+          "local_name": "erfassungsdatum",
+          "label": "The date the assessment was carried out. Use ISO 8601 (YYYY-MM-DD).",
+          "obligation": "mandatory",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/CA1BC5"
+        },
+        {
+          "local_name": "zustaendigePerson",
+          "label": "The person responsible for carrying out the assessment.",
+          "obligation": "mandatory",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/HRO94F"
+        },
+        {
+          "local_name": "dokumentationsform",
+          "label": "The form this assessment's documentation takes (e.g. text report, structured data, photographs).",
+          "obligation": "conditional",
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/CDD6B5"
+        },
+        {
+          "local_name": "dokumentationsform.verweis",
+          "label": "A reference/link to the documentation named above, if it lives elsewhere.",
+          "obligation": "conditional",
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/GDF23F"
+        },
+        {
+          "local_name": "zustandsbeschreibung",
+          "label": "A free-text description of the object's condition at the time of this assessment.",
+          "obligation": "mandatory",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/AC1786"
+        },
+        {
+          "local_name": "zustandsbeschreibung.bisherigeUmgebungsbedingungen",
+          "label": "The environmental conditions the object was previously kept under, where relevant to its condition.",
+          "obligation": "recommended",
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/G79CA9"
+        },
+        {
+          "local_name": "zustandsbeschreibung.physischerObjektzustand",
+          "label": "The object's physical condition, summarised (dimensions, weight, completeness, stability).",
+          "obligation": "mandatory",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/BC5B57"
+        },
+        {
+          "local_name": "zustandsbeschreibung.physischerObjektzustand.aktuelleMasse",
+          "label": "The object's current dimensions.",
+          "obligation": "conditional",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/DBC278"
+        },
+        {
+          "local_name": "zustandsbeschreibung.physischerObjektzustand.aktuellesGewicht",
+          "label": "The object's current weight.",
+          "obligation": "optional",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/C7C3B7"
+        },
+        {
+          "local_name": "zustandsbeschreibung.physischerObjektzustand.vollstaendigkeit",
+          "label": "Whether the object is complete.",
+          "obligation": "recommended",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/CA8K78"
+        },
+        {
+          "local_name": "zustandsbeschreibung.physischerObjektzustand.stabilitaet",
+          "label": "The object's structural stability.",
+          "obligation": "recommended",
+          "repeatable": false,
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/GVB7T9"
+        },
+        {
+          "local_name": "zustandsbeschreibung.schadensphaenomene",
+          "label": "Damage phenomena observed on the object.",
+          "obligation": "mandatory",
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/AA6941"
+        },
+        {
+          "local_name": "konservatorischeVorgeschichte",
+          "label": "Any known prior conservation/restoration history for the object.",
+          "obligation": "recommended",
+          "term_uri": "https://www.w3id.org/conservation/terms/metadata/A4G52F"
+        }
+      ]
+    }
+  ]
+}
