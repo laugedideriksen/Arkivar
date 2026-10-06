@@ -1,0 +1,111 @@
+{
+  "_comment": "Auto-derived from ns/technical.ttl -- Arkivar's own fallback vocabulary for technical facts with no home in Dublin Core, EXIF, or NFO. These are extracted automatically by FIELD_REGISTRY, never hand-entered, so no term_uri override is needed: predicate = namespace_uri + local_name for every term.",
+  "id": "arkivar",
+  "prefix": "arkivar",
+  "namespace_uri": "https://laugedideriksen.github.io/arkivar/ns/technical/v1#",
+  "terms": [
+    {
+      "local_name": "fileSize",
+      "label": "Size of the file, in bytes.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "lensMake",
+      "label": "Manufacturer of the lens used to capture an image, where distinct from the camera manufacturer.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "lensModel",
+      "label": "Model name of the lens used to capture an image.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "colorSpace",
+      "label": "The color space encoding used by an image (e.g. sRGB, Adobe RGB).",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "dngVersion",
+      "label": "The version of the Adobe Digital Negative (DNG) specification a raw image file conforms to.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "colorType",
+      "label": "The pixel color type of a lossless image file (e.g. RGB, RGBA, Grayscale, Indexed).",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "compression",
+      "label": "The compression scheme applied to a file's encoded data.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "producer",
+      "label": "The software or service that produced a document file, as distinct from the tool used to author its content (see arkivar:creatorTool).",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "creatorTool",
+      "label": "The software application used to author or create the content of a file.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "pdfVersion",
+      "label": "The version of the PDF specification a file conforms to.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "characterEncoding",
+      "label": "The character encoding used by a plain-text or structured-text file (e.g. UTF-8).",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "bitsPerSample",
+      "label": "The number of bits used to represent each audio sample.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "bitrate",
+      "label": "The average bitrate of a compressed audio or video stream.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "encoder",
+      "label": "The software used to encode a compressed audio file.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "frameRate",
+      "label": "The number of video frames captured or played back per second.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "videoCodec",
+      "label": "The compression codec used to encode a file's video stream.",
+      "obligation": "optional",
+      "repeatable": false
+    },
+    {
+      "local_name": "audioCodec",
+      "label": "The compression codec used to encode a file's audio stream.",
+      "obligation": "optional",
+      "repeatable": false
+    }
+  ],
+  "events": []
+}
