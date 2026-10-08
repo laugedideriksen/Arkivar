@@ -102,6 +102,20 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
             transform=_to_int,
         ),
     ],
+    "heif_dimensions": [  # container dimensions; EXIF block is optional
+        FieldDefinition(
+            "File:ImageWidth",
+            "nfo",
+            "width",
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "File:ImageHeight",
+            "nfo",
+            "height",
+            transform=_to_int,
+        ),
+    ],
     "camera": [  # EXIF-bearing images: JPEG, TIFF, most RAW, HEIC
         FieldDefinition(
             "EXIF:DateTimeOriginal",
@@ -254,7 +268,8 @@ FILETYPE_GROUPS: dict[str, list[str]] = {
     # images: standard/lossy
     ".jpg": ["common", "file_stats", "image_dimensions", "camera"],
     ".jpeg": ["common", "file_stats", "image_dimensions", "camera"],
-    ".heic": ["common", "file_stats", "image_dimensions", "camera"],
+    ".heic": ["common", "file_stats", "heif_dimensions", "camera"],
+    ".heif": ["common", "file_stats", "heif_dimensions", "camera"],
     # images: lossless
     ".png": ["common", "file_stats", "image_dimensions", "lossless_image"],
     ".tif": ["common", "file_stats", "image_dimensions", "camera", "lossless_image"],

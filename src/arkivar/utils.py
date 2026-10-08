@@ -7,10 +7,19 @@ from typing import Any, Optional, Tuple
 from pathlib import Path
 
 
+# puremagic ranks HEIC as .mp4 (same ftyp box); .heif is a lower-ranked match.
+HEIF_EXTENSIONS = {"heic", "heif"}
+
+
 def validate_file(file_state: FileState) -> bool:
     file_path = str(file_state.current_path)
-    magic = puremagic.from_file(file_path).lstrip(".")
     extension = file_path.rsplit(".", 1)[-1].lstrip(".")
+
+    if extension.lower() in HEIF_EXTENSIONS:
+        matches = puremagic.magic_file(file_path)
+        return any(m.extension.lstrip(".").lower() == "heif" for m in matches)
+
+    magic = puremagic.from_file(file_path).lstrip(".")
 
     match extension:  # Some markdown files have are identified as txt files. This makes sure they don't fail to validate
         case "md":
@@ -24,7 +33,7 @@ def validate_file(file_state: FileState) -> bool:
 def run_rsync(
     source: Path, destination: Path, dry_run: bool = False
 ) -> tuple[bool, str]:
-    flags = ["-ca", "--itemize-changes"]  # TODO: check with my earlier version
+    flags = ["-ca", "--itemize-changes"]  # TODO: check with earlier version
     if dry_run:
         flags.append("-n")
 
@@ -61,7 +70,7 @@ def run_exiftool(
 def resolve_created_date(
     sidecar: dict, staged_path: Path
 ) -> Tuple[Optional[date], str]:
-    for raw_value in sidecar["dublin_core"].get("dates", []):
+    for raw_value in sidecar["fields"].get("dcterms", {}).get("dates", []):
         if not raw_value:
             continue
         try:

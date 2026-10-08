@@ -10,7 +10,7 @@ from .metadata import (
     exiftool_fields_for,
     build_sidecar,
     write_sidecar,
-    dc_template,
+    metadata_template,
 )
 import json
 from pathlib import Path
@@ -128,38 +128,37 @@ def extract_metadata(data_source: FileState, logger: LogWriter) -> FileState:
 
 
 def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
-    """Replaces any unaltered field in metadata.json with an empty list"""
-    try:
-        metadata_file = project_path / "metadata.json"
-        dc_temp = dc_template()
-        with open(metadata_file, "r") as f:
-            project_metadata = json.load(f)
+    """Replaces any unaltered placeholder in metadata.json with an empty list"""
+    metadata_file = project_path / "metadata.json"
+    with open(metadata_file, "r") as f:
+        project_metadata = json.load(f)
 
-        for key, value in project_metadata.items():
-            if value == dc_temp[key]:
-                project_metadata[key] = []
+    template = metadata_template(project_metadata.get("schemas", []))
+    for schema_id, placeholders in template.items():
+        if schema_id in ("schemas", "_event_ids"):
+            continue
+        fields = project_metadata.get(schema_id, {})
+        for key, placeholder in placeholders.items():
+            if fields.get(key) == placeholder:
+                fields[key] = []
 
-        with open(metadata_file, "w") as f:
-            json.dump(
-                project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False
-            )
+    with open(metadata_file, "w") as f:
+        json.dump(project_metadata, f, sort_keys=False, indent=4, ensure_ascii=False)
 
-        logger._write_log_entry(
-            action_type="CLEAN_PROJECT_METADATA",
-            path_before=metadata_file,
-            path_after=metadata_file,
-        )
+    logger._write_log_entry(
+        action_type="CLEAN_PROJECT_METADATA",
+        path_before=metadata_file,
+        path_after=metadata_file,
+    )
 
-        print("metadata.json has been cleaned")
-    except Exception as e:
-        raise e
+    print("metadata.json has been cleaned")
 
 
 def create_sidecar_file(
     data_source: FileState, logger: LogWriter, project_path: Path
 ) -> FileState:
-    suffix = data_source.current_path.suffix
-    exif_data = data_source.metadata
+    suffix = data_source.current_path.suffix.lower()
+    exif_data = data_source.metadata or {}
     metadata_file = project_path / "metadata.json"
     with open(metadata_file, "r") as f:
         project_metadata = json.load(f)
@@ -184,6 +183,13 @@ def organise(
     date_resolution: Optional[str] = "day",
 ) -> FileState:
     """Move files to data/"""
+    staged_file_path = data_source.current_path
+    staged_sidecar_path = data_source.sidecar_path
+    if staged_sidecar_path is None:
+        return logger.change_state(
+            data_source, "ERROR", staged_file_path, note="No sidecar to move"
+        )
+
     data_dir = project_path / "data"
 
     if date_resolution and data_source.created_date:
@@ -194,19 +200,16 @@ def organise(
     target_dir = data_dir / date_dir / data_source.relative_source_path
     target_dir.mkdir(parents=True, exist_ok=True)
     file_target = target_dir / data_source.base_name
-    sidecar_target = target_dir / data_source.sidecar_path.name
+    sidecar_target = target_dir / staged_sidecar_path.name
 
-    staged_file_path = data_source.current_path
-    staged_sidecar_path = data_source.sidecar_path
-
-    file_success, file_msg = run_rsync(data_source.current_path, file_target)
+    file_success, file_msg = run_rsync(staged_file_path, file_target)
 
     if not file_success:
         return logger.change_state(
             data_source, "ERROR", staged_file_path, note=f"Rsync FAIL: {file_msg}"
         )
 
-    sidecar_success, sidecar_msg = run_rsync(data_source.sidecar_path, sidecar_target)
+    sidecar_success, sidecar_msg = run_rsync(staged_sidecar_path, sidecar_target)
 
     if not sidecar_success:
         if file_target.exists():
@@ -223,7 +226,7 @@ def organise(
 
     logger._write_log_entry(
         action_type="MOVE_SIDECAR",
-        path_before=data_source.sidecar_path,
+        path_before=staged_sidecar_path,
         path_after=sidecar_target,
         note=f"Rsync OK: {sidecar_msg}",
     )

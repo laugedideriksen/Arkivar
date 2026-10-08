@@ -2,8 +2,9 @@ import os
 import csv
 import json
 from .log_writer import LogWriter
-from .metadata import dc_template
+from .metadata import metadata_template
 from pathlib import Path
+from typing import Optional
 
 
 def _create_changelog(project_path: Path) -> LogWriter:
@@ -117,10 +118,12 @@ def _create_dirs(project_path: Path, logger: LogWriter) -> None:
         print(f"data/ created at {data_dir}")
 
 
-def _create_metadata_template(project_path: Path, logger: LogWriter):
-    """Create metadata.json and populate with Dublin Core field descriptions."""
+def _create_metadata_template(
+    project_path: Path, logger: LogWriter, schema_ids: Optional[list[str]] = None
+):
+    """Create metadata.json with placeholder fields for the given schemas (default: dcterms)."""
     metadata_temp = project_path / "metadata.json"
-    dc_dict = dc_template()
+    template = metadata_template(schema_ids or ["dcterms"])
 
     if metadata_temp.exists():
         logger._write_log_entry(
@@ -132,7 +135,7 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
         print(f"metadata.json already exists at {metadata_temp}")
     else:
         with open(metadata_temp, "w") as f:
-            json.dump(dc_dict, f, sort_keys=False, indent=4, ensure_ascii=False)
+            json.dump(template, f, sort_keys=False, indent=4, ensure_ascii=False)
 
         logger._write_log_entry(
             action_type="CREATE_METADATA_TEMPLATE",
@@ -143,7 +146,7 @@ def _create_metadata_template(project_path: Path, logger: LogWriter):
         print(f"metadata.json created at {metadata_temp}")
 
 
-def init_dir(project_path: str | Path):
+def init_dir(project_path: str | Path, schema_ids: Optional[list[str]] = None):
     """Initialise a given directory by creating directories, changelog.csv, and metadata.json."""
     project_path = Path(project_path).resolve()
 
@@ -162,7 +165,7 @@ def init_dir(project_path: str | Path):
 
     logger = _create_changelog(project_path)
     _create_dirs(project_path, logger)
-    _create_metadata_template(project_path, logger)
+    _create_metadata_template(project_path, logger, schema_ids)
 
     if (
         os.path.isdir(project_path / "staging")
