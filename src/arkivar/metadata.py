@@ -1,66 +1,55 @@
+import uuid
 from datetime import datetime
-from rdflib import Graph, Namespace, Literal, URIRef
-from rdflib.namespace import DCTERMS
+from urllib.parse import quote
+from rdflib import Graph, Literal, URIRef
+from rdflib.namespace import RDFS
 from pathlib import Path
 from .data_objects import FileState
 from .log_writer import LogWriter
+from .schema import Schema, SchemaRegistry
 from dataclasses import dataclass
 from typing import Optional, Any, Callable
 from typing import Literal as typingLiteral
-from enum import Enum
 from .utils import resolve_created_date
 
 
-def dc_template() -> dict:
-    return dict(
-        contributors=[
-            "An entity responsible for making contributions to the resource."
-        ],
-        coverage=[
-            "The spatial or temporal topic of the resource, spatial applicability of the resource, or jurisdiction under which the resource is relevant."
-        ],
-        creators=["An entity primarily responsible for making the resource."],
-        dates=[
-            "A point or period of time associated with an event in the lifecycle of the resource. Please use YYYY-MM-DD (ISO 8601)."
-        ],
-        descriptions=[
-            "An account of the resource. Description may include but is not limited to: an abstract, a table of contents, a graphical representation, or a free-text account of the resource."
-        ],
-        formats=["The file format, physical medium, or dimensions of the resource."],
-        identifiers=[
-            "An unambiguous reference to the resource within a given context. Recommended best practice is to identify the resource by means of a string conforming to a formal identification system."
-        ],
-        languages=["A language of the resource."],
-        publishers=["An entity responsible for making the resource available."],
-        relations=[
-            "A related resource. Recommended practice is to identify the related resource by means of a URI. If this is not possible or feasible, a string conforming to a formal identification system may be provided."
-        ],
-        rights=["Information about rights held in and over the resource."],
-        sources=["A related resource from which the described resource is derived."],
-        subject=[
-            "The topic of the resource. Typically, the subject will be represented using keywords, key phrases, or classification codes. Recommended best practice is to use a controlled vocabulary."
-        ],
-        titles=["A name given to the resource."],
-        types=["The nature or genre of the resource."],
-    )
+def metadata_template(
+    schema_ids: list[str], registry: Optional[SchemaRegistry] = None
+) -> dict:
+    """Build a fresh metadata.json body for the given active schemas: every
+    term each schema declares (plain and event alike), keyed by json_key,
+    with its obligation level and label as placeholder text -- plus a
+    per-project resource id for each active event type (see EventType /
+    _event_subject below for why)."""
+    registry = registry or SchemaRegistry()
+    out: dict[str, Any] = {"schemas": list(schema_ids)}
+    event_ids: dict[str, str] = {}
+
+    for schema_id in schema_ids:
+        schema = registry.get(schema_id)
+        fields: dict[str, list[str]] = {}
+        for json_key, (event_id, term) in schema.json_keys().items():
+            fields[json_key] = [f"[{term.obligation}] {term.label}"]
+        out[schema_id] = fields
+        for event in schema.events.values():
+            event_ids[f"{schema_id}.{event.id}"] = str(uuid.uuid4())
+
+    if event_ids:
+        out["_event_ids"] = event_ids
+    return out
 
 
-EXIF = Namespace("http://www.w3.org/2003/12/exif/ns#")
-NFO = Namespace("http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#")
-ARKIVAR = Namespace("https://arkivar.example/ns/technical#")
-
-
-class Target(Enum):
-    DUBLIN_CORE = "dublin_core"
-    TECHNICAL = "technical"
+class Target:
+    """Deprecated: kept only so any external code still importing
+    Target.DUBLIN_CORE / Target.TECHNICAL fails loudly rather than
+    silently. FieldDefinition now takes schema_id directly."""
 
 
 @dataclass(frozen=True)
 class FieldDefinition:
     exif_field: str
-    target: Target
+    schema_id: str
     key: str
-    namespace: Optional[Namespace] = None
     transform: Optional[Callable[[str], Any]] = None
     merge: typingLiteral["append", "replace"] = "append"
 
@@ -87,15 +76,14 @@ def _to_float(value: str | int | float) -> Optional[float]:
 FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     # --- shared across (almost) everything ---
     "common": [
-        FieldDefinition("File:FileName", Target.DUBLIN_CORE, "titles", merge="replace"),
-        FieldDefinition("File:FileType", Target.DUBLIN_CORE, "formats"),
+        FieldDefinition("File:FileName", "dcterms", "titles", merge="replace"),
+        FieldDefinition("File:FileType", "dcterms", "formats"),
     ],
     "file_stats": [
         FieldDefinition(
             "File:FileSize",
-            Target.TECHNICAL,
+            "arkivar",
             "fileSize",
-            namespace=ARKIVAR,
             transform=_to_int,
         ),
     ],
@@ -103,218 +91,176 @@ FIELD_REGISTRY: dict[str, list[FieldDefinition]] = {
     "image_dimensions": [
         FieldDefinition(
             "EXIF:ExifImageWidth",
-            Target.TECHNICAL,
+            "nfo",
             "width",
-            namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
             "EXIF:ExifImageHeight",
-            Target.TECHNICAL,
+            "nfo",
             "height",
-            namespace=NFO,
+            transform=_to_int,
+        ),
+    ],
+    "heif_dimensions": [  # container dimensions; EXIF block is optional
+        FieldDefinition(
+            "File:ImageWidth",
+            "nfo",
+            "width",
+            transform=_to_int,
+        ),
+        FieldDefinition(
+            "File:ImageHeight",
+            "nfo",
+            "height",
             transform=_to_int,
         ),
     ],
     "camera": [  # EXIF-bearing images: JPEG, TIFF, most RAW, HEIC
         FieldDefinition(
             "EXIF:DateTimeOriginal",
-            Target.DUBLIN_CORE,
+            "dcterms",
             "dates",
             transform=_parse_exif_datetime,
         ),
-        FieldDefinition("EXIF:Artist", Target.DUBLIN_CORE, "creators"),
-        FieldDefinition(
-            "Composite:ShutterSpeed", Target.TECHNICAL, "shutterSpeed", namespace=EXIF
-        ),
-        FieldDefinition(
-            "Composite:Aperture", Target.TECHNICAL, "fNumber", namespace=EXIF
-        ),
+        FieldDefinition("EXIF:Artist", "dcterms", "creators"),
+        FieldDefinition("Composite:ShutterSpeed", "exif", "shutterSpeed"),
+        FieldDefinition("Composite:Aperture", "exif", "fNumber"),
         FieldDefinition(
             "EXIF:ISO",
-            Target.TECHNICAL,
+            "exif",
             "ISO",
-            namespace=EXIF,
             transform=_to_int,
         ),
-        FieldDefinition("EXIF:Flash", Target.TECHNICAL, "flash", namespace=EXIF),
+        FieldDefinition("EXIF:Flash", "exif", "flash"),
         FieldDefinition(
             "Composite:FocalLength35efl",
-            Target.TECHNICAL,
+            "exif",
             "focalLengthIn35mmEquivalent",
-            namespace=EXIF,
             transform=_to_int,
         ),
-        FieldDefinition("EXIF:Make", Target.TECHNICAL, "cameraMake", namespace=EXIF),
-        FieldDefinition("EXIF:Model", Target.TECHNICAL, "cameraModel", namespace=EXIF),
-        FieldDefinition(
-            "EXIF:LensMake", Target.TECHNICAL, "lensMake", namespace=ARKIVAR
-        ),
-        FieldDefinition(
-            "EXIF:LensModel", Target.TECHNICAL, "lensModel", namespace=ARKIVAR
-        ),
+        FieldDefinition("EXIF:Make", "exif", "cameraMake"),
+        FieldDefinition("EXIF:Model", "exif", "cameraModel"),
+        FieldDefinition("EXIF:LensMake", "arkivar", "lensMake"),
+        FieldDefinition("EXIF:LensModel", "arkivar", "lensModel"),
     ],
     "raw_image": [  # extra fields on top of "camera", for CR2/CR3/NEF/ARW/ORF/RAF/DNG
         FieldDefinition(
             "BitsPerSample",
-            Target.TECHNICAL,
+            "nfo",
             "colorDepth",
-            namespace=NFO,
             transform=_to_int,
         ),
-        FieldDefinition(
-            "ColorSpace", Target.TECHNICAL, "colorSpace", namespace=ARKIVAR
-        ),
-        FieldDefinition(
-            "DNGVersion", Target.TECHNICAL, "dngVersion", namespace=ARKIVAR
-        ),
+        FieldDefinition("ColorSpace", "arkivar", "colorSpace"),
+        FieldDefinition("DNGVersion", "arkivar", "dngVersion"),
     ],
     "lossless_image": [  # PNG, TIFF, BMP, WebP — format facts, no EXIF exposure data
         FieldDefinition(
             "PNG:BitDepth",
-            Target.TECHNICAL,
+            "nfo",
             "colorDepth",
-            namespace=NFO,
             transform=_to_int,
         ),
-        FieldDefinition(
-            "PNG:ColorType", Target.TECHNICAL, "colorType", namespace=ARKIVAR
-        ),
-        FieldDefinition(
-            "PNG:Compression", Target.TECHNICAL, "compression", namespace=ARKIVAR
-        ),
+        FieldDefinition("PNG:ColorType", "arkivar", "colorType"),
+        FieldDefinition("PNG:Compression", "arkivar", "compression"),
     ],
     # --- documents ---
     "document": [
-        FieldDefinition(
-            "XMP:Producer", Target.TECHNICAL, "producer", namespace=ARKIVAR
-        ),
-        FieldDefinition(
-            "XMP:CreatorTool", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR
-        ),
+        FieldDefinition("XMP:Producer", "arkivar", "producer"),
+        FieldDefinition("XMP:CreatorTool", "arkivar", "creatorTool"),
         FieldDefinition(
             "PDF:PageCount",
-            Target.TECHNICAL,
+            "nfo",
             "pageCount",
-            namespace=NFO,
             transform=_to_int,
         ),
-        FieldDefinition(
-            "PDF:PDFVersion", Target.TECHNICAL, "pdfVersion", namespace=ARKIVAR
-        ),
+        FieldDefinition("PDF:PDFVersion", "arkivar", "pdfVersion"),
     ],
     "office_document": [  # DOCX, ODT, RTF
-        FieldDefinition("Author", Target.DUBLIN_CORE, "creators"),
+        FieldDefinition("Author", "dcterms", "creators"),
         FieldDefinition(
             "XMLPages",
-            Target.TECHNICAL,
+            "nfo",
             "pageCount",
-            namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
             "XML:Words",
-            Target.TECHNICAL,
+            "nfo",
             "wordCount",
-            namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
             "XML:Characters",
-            Target.TECHNICAL,
+            "nfo",
             "characterCount",
-            namespace=NFO,
             transform=_to_int,
         ),
-        FieldDefinition(
-            "XML:Application", Target.TECHNICAL, "creatorTool", namespace=ARKIVAR
-        ),
+        FieldDefinition("XML:Application", "arkivar", "creatorTool"),
     ],
     "plain_text": [
         FieldDefinition(
             "File:MIMEEncoding",
-            Target.TECHNICAL,
+            "arkivar",
             "characterEncoding",
-            namespace=ARKIVAR,
         ),
         FieldDefinition(
             "File:WordCount",
-            Target.TECHNICAL,
+            "nfo",
             "wordCount",
-            namespace=NFO,
             transform=_to_int,
         ),
     ],
     "structured_text": [  # CSV, JSON, XML, HTML — usually just basic file facts
         FieldDefinition(
             "File:MIMEEncoding",
-            Target.TECHNICAL,
+            "arkivar",
             "characterEncoding",
-            namespace=ARKIVAR,
         ),
     ],
     # --- audio ---
     "audio_descriptive": [  # ID3-style tags — about the content, not the encoding
-        FieldDefinition("ID3:Title", Target.DUBLIN_CORE, "titles"),
-        FieldDefinition("ID3:Artist", Target.DUBLIN_CORE, "creators"),
-        FieldDefinition("ID3:Album", Target.DUBLIN_CORE, "relations"),
-        FieldDefinition("ID3:Year", Target.DUBLIN_CORE, "dates"),
-        FieldDefinition("ID3:Genre", Target.DUBLIN_CORE, "subject"),
+        FieldDefinition("ID3:Title", "dcterms", "titles"),
+        FieldDefinition("ID3:Artist", "dcterms", "creators"),
+        FieldDefinition("ID3:Album", "dcterms", "relations"),
+        FieldDefinition("ID3:Year", "dcterms", "dates"),
+        FieldDefinition("ID3:Genre", "dcterms", "subject"),
     ],
     "audio_technical": [  # shared by lossy and lossless
-        FieldDefinition(
-            "Composite:Duration", Target.TECHNICAL, "duration", namespace=NFO
-        ),
+        FieldDefinition("Composite:Duration", "nfo", "duration"),
         FieldDefinition(
             "RIFF:SampleRate",
-            Target.TECHNICAL,
+            "nfo",
             "sampleRate",
-            namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
             "RIFF:NumChannels",
-            Target.TECHNICAL,
+            "nfo",
             "channels",
-            namespace=NFO,
             transform=_to_int,
         ),
         FieldDefinition(
             "RIFF:BitsPerSample",
-            Target.TECHNICAL,
+            "arkivar",
             "bitsPerSample",
-            namespace=ARKIVAR,
             transform=_to_int,
         ),
     ],
     "audio_lossy": [  # MP3, AAC, OGG, M4A — extra fields for compressed audio
-        FieldDefinition(
-            "MPEG:AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR
-        ),
-        FieldDefinition("AudioBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
-        FieldDefinition(
-            "MPEG:EncodedBy", Target.TECHNICAL, "encoder", namespace=ARKIVAR
-        ),
+        FieldDefinition("MPEG:AudioBitrate", "arkivar", "bitrate"),
+        FieldDefinition("AudioBitrate", "arkivar", "bitrate"),
+        FieldDefinition("MPEG:EncodedBy", "arkivar", "encoder"),
     ],
     # --- video --- (field names least verified — check against your own files)
     "video_technical": [
-        FieldDefinition("Duration", Target.TECHNICAL, "duration", namespace=NFO),
-        FieldDefinition(
-            "ImageWidth", Target.TECHNICAL, "width", namespace=NFO, transform=_to_int
-        ),
-        FieldDefinition(
-            "ImageHeight", Target.TECHNICAL, "height", namespace=NFO, transform=_to_int
-        ),
-        FieldDefinition(
-            "VideoFrameRate", Target.TECHNICAL, "frameRate", namespace=ARKIVAR
-        ),
-        FieldDefinition(
-            "CompressorID", Target.TECHNICAL, "videoCodec", namespace=ARKIVAR
-        ),
-        FieldDefinition(
-            "AudioFormat", Target.TECHNICAL, "audioCodec", namespace=ARKIVAR
-        ),
-        FieldDefinition("AvgBitrate", Target.TECHNICAL, "bitrate", namespace=ARKIVAR),
+        FieldDefinition("Duration", "nfo", "duration"),
+        FieldDefinition("ImageWidth", "nfo", "width", transform=_to_int),
+        FieldDefinition("ImageHeight", "nfo", "height", transform=_to_int),
+        FieldDefinition("VideoFrameRate", "arkivar", "frameRate"),
+        FieldDefinition("CompressorID", "arkivar", "videoCodec"),
+        FieldDefinition("AudioFormat", "arkivar", "audioCodec"),
+        FieldDefinition("AvgBitrate", "arkivar", "bitrate"),
     ],
 }
 
@@ -322,7 +268,8 @@ FILETYPE_GROUPS: dict[str, list[str]] = {
     # images: standard/lossy
     ".jpg": ["common", "file_stats", "image_dimensions", "camera"],
     ".jpeg": ["common", "file_stats", "image_dimensions", "camera"],
-    ".heic": ["common", "file_stats", "image_dimensions", "camera"],
+    ".heic": ["common", "file_stats", "heif_dimensions", "camera"],
+    ".heif": ["common", "file_stats", "heif_dimensions", "camera"],
     # images: lossless
     ".png": ["common", "file_stats", "image_dimensions", "lossless_image"],
     ".tif": ["common", "file_stats", "image_dimensions", "camera", "lossless_image"],
@@ -393,26 +340,6 @@ FILETYPE_GROUPS: dict[str, list[str]] = {
 }
 
 
-DC_TEMPLATE_TO_DCTERMS = {
-    "contributors": DCTERMS.contributor,
-    "coverage": DCTERMS.coverage,
-    "creators": DCTERMS.creator,
-    "dates": DCTERMS.date,
-    "descriptions": DCTERMS.description,
-    "formats": DCTERMS.format,
-    "identifiers": DCTERMS.identifier,
-    "isPartOf": DCTERMS.isPartOf,
-    "languages": DCTERMS.language,
-    "publishers": DCTERMS.publisher,
-    "relations": DCTERMS.relation,
-    "rights": DCTERMS.rights,
-    "sources": DCTERMS.source,
-    "subject": DCTERMS.subject,
-    "titles": DCTERMS.title,
-    "types": DCTERMS.type,
-}
-
-
 def exiftool_fields_for(suffix: str) -> list[str]:
     """Replaces type_specific_metadata() — what to request from exiftool."""
     if suffix not in FILETYPE_GROUPS:
@@ -425,11 +352,14 @@ def exiftool_fields_for(suffix: str) -> list[str]:
 
 
 def _apply_exif_fields(
-    dc: dict[str, list[str]],
-    technical: dict[tuple[Namespace, str], Any],
+    sidecar: dict[str, dict[str, list]],
     exif_data: dict,
     suffix: str,
 ) -> None:
+    """Merge exiftool-extracted values into sidecar[schema_id][key], for
+    whichever schema_id each FieldDefinition targets -- regardless of
+    which schemas the project selected for manual documentation. Technical
+    extraction (exif/nfo/arkivar) always runs; it isn't opt-in."""
     for group in FILETYPE_GROUPS[suffix]:
         for file_definition in FIELD_REGISTRY[group]:
             raw_exif_value = exif_data.get(file_definition.exif_field)
@@ -444,80 +374,125 @@ def _apply_exif_fields(
             if value is None:
                 continue
 
-            if file_definition.target is Target.DUBLIN_CORE:
-                str_value = str(value)
-                if file_definition.merge == "replace":
-                    dc[file_definition.key] = [str_value]
-                else:
-                    existing = dc.setdefault(file_definition.key, [])
-                    if str_value not in existing:
-                        existing.append(str_value)
+            bucket = sidecar.setdefault(file_definition.schema_id, {})
+            if file_definition.merge == "replace":
+                bucket[file_definition.key] = [value]
             else:
-                technical[(file_definition.namespace, file_definition.key)] = value
+                existing = bucket.setdefault(file_definition.key, [])
+                if value not in existing:
+                    existing.append(value)
 
 
 def _write_project_title_to_is_part_of(
-    dc: dict[str, list[str]], project_metadata: dict
+    sidecar: dict[str, dict[str, list]], project_metadata: dict
 ) -> None:
-    project_titles = project_metadata.get("titles", [])
-    existing = dc.setdefault("isPartOf", [])
+    project_titles = project_metadata.get("dcterms", {}).get("titles", [])
+    existing = sidecar.setdefault("dcterms", {}).setdefault("isPartOf", [])
     for title in project_titles:
         if title and title not in existing:
             existing.append(title)
 
 
-def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
-    dc = {key: list(values) for key, values in project_metadata.items()}
-    technical = {}
-
-    _apply_exif_fields(dc, technical, exif_data, suffix)
-    _write_project_title_to_is_part_of(dc, project_metadata)
-
-    return {"dublin_core": dc, "technical_information": technical}
-
-
-# def build_sidecar(project_metadata: dict, exif_data: dict, suffix: str) -> dict:
-#    dc = dict(project_metadata)
-#    technical = {}
-#
-#    for group in FILETYPE_GROUPS[suffix]:
-#        for file_definition in FIELD_REGISTRY[group]:
-#            raw_exif_value = exif_data.get(file_definition.exif_field)
-#            if raw_exif_value is None:
-#                continue
-#            value = (
-#                file_definition.transform(raw_exif_value)
-#                if file_definition.transform
-#                else raw_exif_value
-#            )
-#            if value is None:
-#                continue
-#
-#            if file_definition.target is Target.DUBLIN_CORE:
-#                dc[file_definition.key] = [str(value)]
-#            else:
-#                technical[(file_definition.namespace, file_definition.key)] = value
-#
-#    return {"dublin_core": dc, "technical_information": technical}
+def _event_subject(
+    schema: Schema, event_id: str, fields: dict[str, list], project_metadata: dict
+) -> URIRef:
+    """One resource per event *type* per *project* (not per file, not
+    repeatable -- see schema.py's module docstring for why). Preferably
+    seeded from the event's own identifying field, so the same
+    human-assigned id (e.g. a case number) determines the resource's URI;
+    falling back to a UUID minted once at `init` time and cached in
+    metadata.json under "_event_ids" for events left unfilled."""
+    event = schema.events[event_id]
+    if event.identifier_term:
+        id_key = f"{event_id}.{event.identifier_term}"
+        id_values = fields.get(id_key)
+        if id_values and id_values[0]:
+            return URIRef(
+                f"urn:arkivar:{schema.id}:{event_id}:{quote(str(id_values[0]), safe='')}"
+            )
+    cached = project_metadata.get("_event_ids", {}).get(f"{schema.id}.{event_id}")
+    if cached:
+        return URIRef(f"urn:uuid:{cached}")
+    return URIRef(f"urn:uuid:{uuid.uuid4()}")
 
 
-def build_sidecar_graph(data_source: FileState, sidecar: dict) -> Graph:
+def build_sidecar(
+    project_metadata: dict,
+    exif_data: dict,
+    suffix: str,
+    registry: Optional[SchemaRegistry] = None,
+) -> dict:
+    """project_metadata's own "schemas" list decides which manually-entered
+    vocabularies are active for this project (default: just dcterms, for
+    backwards compatibility with pre-schema-registry metadata.json files).
+    Exiftool-derived technical schemas (exif/nfo/arkivar) are layered in
+    regardless, exactly as before."""
+    registry = registry or SchemaRegistry()
+    schema_ids = project_metadata.get("schemas", ["dcterms"])
+
+    sidecar: dict[str, dict[str, list]] = {
+        sid: {k: list(v) for k, v in project_metadata.get(sid, {}).items()}
+        for sid in schema_ids
+    }
+
+    _apply_exif_fields(sidecar, exif_data, suffix)
+    _write_project_title_to_is_part_of(sidecar, project_metadata)
+
+    event_subjects: dict[str, str] = {}
+    for sid, fields in sidecar.items():
+        schema = registry.get(sid)
+        for event_id in schema.events:
+            event_subjects[f"{sid}.{event_id}"] = str(
+                _event_subject(schema, event_id, fields, project_metadata)
+            )
+
+    return {"fields": sidecar, "event_subjects": event_subjects}
+
+
+def build_sidecar_graph(
+    data_source: FileState, sidecar: dict, registry: Optional[SchemaRegistry] = None
+) -> Graph:
+    registry = registry or SchemaRegistry()
     g = Graph()
-    g.bind("dcterms", DCTERMS)
-    g.bind("exif", EXIF)
-    g.bind("nfo", NFO)
-    g.bind("arkivar", ARKIVAR)
+    g.bind("rdfs", RDFS)
 
     subject = URIRef(f"urn:uuid:{data_source.uri}")
+    event_subjects = {
+        k: URIRef(v) for k, v in sidecar.get("event_subjects", {}).items()
+    }
+    labeled_events: set[str] = set()
 
-    for key, values in sidecar["dublin_core"].items():
-        predicate = DC_TEMPLATE_TO_DCTERMS[key]
-        for value in values:
-            if value:
-                g.add((subject, predicate, Literal(value)))
+    for schema_id, fields in sidecar["fields"].items():
+        schema = registry.get(schema_id)
+        g.bind(schema.prefix, schema.namespace)
+        keys = schema.json_keys()
 
-    for (namespace, local_name), value in sidecar["technical_information"].items():
-        g.add((subject, namespace[local_name], Literal(value)))
+        for json_key, values in fields.items():
+            if json_key not in keys:
+                continue  # stale/unrecognised key left over from an old schema version
+            event_id, term = keys[json_key]
+            predicate = schema.predicate_for(term)
+
+            if event_id is None:
+                target_subject = subject
+            else:
+                event_key = f"{schema_id}.{event_id}"
+                target_subject = event_subjects[event_key]
+                if event_key not in labeled_events:
+                    event = schema.events[event_id]
+                    g.add(
+                        (
+                            subject,
+                            schema.namespace[event.predicate_local_name],
+                            target_subject,
+                        )
+                    )
+                    g.add((target_subject, RDFS.label, Literal(event.label)))
+                    labeled_events.add(event_key)
+
+            for value in values:
+                if value:
+                    g.add((target_subject, predicate, Literal(value)))
 
     return g
 
