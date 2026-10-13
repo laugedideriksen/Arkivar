@@ -1,227 +1,220 @@
 {
-  "_comment": "KuR-MDS: Metadatenschema für die Dokumentation von Konservierungs- und Restaurierungsmaßnahmen, Fischer et al., v1.0, September 2026 (NFDI4Objects).",
+  "_comment": "KuR-MDS: Metadatenschema für die Dokumentation von Konservierungs- und Restaurierungsmaßnahmen, Fischer et al., v1.0, September 2026 (NFDI4Objects). Every term_uri below is the schema's own published, persistent URI (w3id.org/conservation/terms/metadata/...), taken directly from the whitepaper. `label` and `obligation` are in German, matching the whitepaper's own terminology (Pflicht/bedingte Pflicht/empfohlen/optional) -- labels are Arkivar's own concise paraphrases for use as metadata.json placeholder text, not verbatim quotes; consult the whitepaper itself for each field's full definition, obligation rationale, and examples. Two corrections from a closer reading of the whitepaper's prose (vs. its summary tables, which are prone to column misalignment on PDF extraction): 'anlassDerZustandserfassung' is Pflicht, not bedingte Pflicht -- the whitepaper's own summary table for §4.3 and its detailed 'Verpflichtungsgrad' heading for that field disagree, and the detailed heading is the more reliable of the two; and 'zustandsbeschreibung' has been removed as a standalone term -- the whitepaper explicitly describes it as a pure grouping element that 'erfasst selbst keinen Datenwert' (carries no data value of its own), bundling bisherigeUmgebungsbedingungen/physischerObjektzustand/schadensphaenomene rather than holding one. Only sections 4.1 (Objektkennzeichnung), 4.2 (Objektbeschreibung), and 4.3 (Zustandserfassung) are modeled so far; 4.4-4.10 follow the same pattern and can be added the same way. Also not yet modeled: 'aktuelle Maße' is a set of four sub-elements (Höhe/Breite/Tiefe/Durchmesser) in the whitepaper's prose, not one field, and 'Schadensphänomen' has its own sub-elements Schadensgrad and Schadensfaktor -- none of the four have their own published term_uri in the summary tables, so they aren't split out here yet.",
   "id": "kur_mds",
   "prefix": "kur",
   "namespace_uri": "https://www.w3id.org/conservation/terms/metadata/",
   "terms": [
     {
       "local_name": "objektkennzeichnung.objektbenennung",
-      "label": "A name or designation for the object (e.g. object type or common name).",
-      "obligation": "mandatory",
+      "label": "Die gebräuchliche Bezeichnung des Objekts in natürlicher Sprache, damit es eindeutig wiedererkennbar ist.",
+      "obligation": "Pflicht",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/B5DD1A"
     },
     {
       "local_name": "objektkennzeichnung.kennzeichnungsnummer",
-      "label": "The object's primary identification/inventory number.",
-      "obligation": "mandatory",
+      "label": "Eine eindeutige alphanumerische Kennung des Objekts im Restaurierungsprozess, im Idealfall ein persistenter Identifier.",
+      "obligation": "Pflicht",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/F7D3DB"
     },
     {
       "local_name": "objektkennzeichnung.artDerKennzeichnungsnummer",
-      "label": "The type or system the identification number above belongs to (e.g. inventory number, accession number).",
-      "obligation": "mandatory",
+      "label": "Der Typ der Kennzeichnungsnummer, z. B. Inventarnummer oder temporäre Fundnummer.",
+      "obligation": "Pflicht",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/G59SR3"
     },
     {
       "local_name": "objektkennzeichnung.weitereObjektnummer",
-      "label": "An additional object number, if one exists (e.g. a loan or excavation number).",
+      "label": "Eine zusätzliche, nicht primäre Nummer des Objekts, z. B. eine frühere oder externe Referenznummer.",
       "obligation": "optional",
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/K343FVC"
     },
     {
       "local_name": "objektkennzeichnung.artDerWeiterenObjektnummer",
-      "label": "The type of the additional object number given above. Fill in only if that field is used.",
-      "obligation": "conditional",
+      "label": "Der Typ der weiteren Objektnummer. Verpflichtend, sobald eine weitere Objektnummer angegeben wurde.",
+      "obligation": "bedingte Pflicht",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/LGPT6AC"
     },
     {
       "local_name": "objektkennzeichnung.datierung",
-      "label": "The dating of the object.",
-      "obligation": "recommended",
+      "label": "Die zeitliche Einordnung der Objektentstehung (Datum, Jahreszahl, Zeitraum oder Epoche).",
+      "obligation": "empfohlen",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/F9GB13"
     },
     {
       "local_name": "objektkennzeichnung.herkunft",
-      "label": "The object's origin or provenance.",
-      "obligation": "recommended",
+      "label": "Informationen zur geografischen, kulturellen oder kontextuellen Provenienz des Objekts.",
+      "obligation": "empfohlen",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/CD3341"
     },
     {
       "local_name": "objektkennzeichnung.eingangsdatum",
-      "label": "The date the object was accessioned/received by the holding institution. Use ISO 8601 (YYYY-MM-DD).",
-      "obligation": "conditional",
+      "label": "Das Datum der Aufnahme des Objekts in die zuständige Sammlung. ISO 8601 (JJJJ-MM-TT).",
+      "obligation": "bedingte Pflicht",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/F2A45F"
     },
     {
       "local_name": "objektkennzeichnung.standort",
-      "label": "The object's current location.",
-      "obligation": "mandatory",
+      "label": "Der Aufbewahrungsort des Objekts außerhalb der Restaurierungseinrichtung, vor, während oder nach der Maßnahme.",
+      "obligation": "Pflicht",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/FC3322"
     },
     {
       "local_name": "objektkennzeichnung.ansprechpartner",
-      "label": "A contact person for questions about the object.",
+      "label": "Die für das Objekt verantwortliche Kontaktperson für Rückfragen.",
       "obligation": "optional",
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/F3G8D1"
     },
     {
       "local_name": "objektkennzeichnung.schoepfer",
-      "label": "The object's creator/maker, if known.",
+      "label": "Die Person oder Werkstatt, die das Objekt geschaffen hat, sofern bekannt.",
       "obligation": "optional",
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/G76A78"
     },
     {
       "local_name": "objektkennzeichnung.objektbeziehung",
-      "label": "A relationship to another object or record (e.g. part of a set).",
-      "obligation": "conditional",
+      "label": "Eine Beziehung des Objekts zu einem übergeordneten Ensemble, Set oder Gesamtobjekt.",
+      "obligation": "bedingte Pflicht",
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/GB6DF3"
     },
     {
       "local_name": "objektbeschreibung.objekttyp",
-      "label": "The type or category of object.",
-      "obligation": "mandatory",
+      "label": "Die formale Kategorie des Objekts, z. B. Gemälde, Münze, Stuhl.",
+      "obligation": "Pflicht",
       "repeatable": false,
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/F1BA31"
     },
     {
       "local_name": "objektbeschreibung.weitereObjekteigenschaften",
-      "label": "Free-text notes on additional physical characteristics not captured elsewhere (e.g. shape, an illegible signature).",
+      "label": "Ergänzende Beschreibungen, die durch die übrigen Elemente nicht abgedeckt sind (Freitext).",
       "obligation": "optional",
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/BGC9F3"
     },
     {
       "local_name": "objektbeschreibung.objektmaterial",
-      "label": "The material(s) the object is made of. Where possible, link to a controlled-vocabulary term (e.g. Getty AAT, GND, or the conservation thesaurus) rather than a bare string -- see the 'label (uri)' convention in schema.py's docstring.",
-      "obligation": "mandatory",
+      "label": "Die Materialien, aus denen das Objekt besteht; nach Möglichkeit mit einem kontrollierten Vokabular verknüpft (z. B. Getty AAT, GND, Konservierungsthesaurus).",
+      "obligation": "Pflicht",
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/D866AD"
     },
     {
       "local_name": "objektbeschreibung.herstellungstechnik",
-      "label": "The manufacturing or fabrication technique used to make the object.",
-      "obligation": "recommended",
+      "label": "Die Verfahren und Methoden, mit denen das Objekt gefertigt wurde.",
+      "obligation": "empfohlen",
       "term_uri": "https://www.w3id.org/conservation/terms/metadata/C4BCF8"
     }
   ],
   "events": [
     {
       "id": "zustandserfassung",
-      "label": "Zustandserfassung (condition assessment)",
+      "label": "Zustandserfassung",
       "predicate_local_name": "hasZustandserfassung",
       "identifier_term": "kennungDerZustandserfassung",
       "terms": [
         {
           "local_name": "kennungDerZustandserfassung",
-          "label": "A unique, persistent identifier for this condition assessment (e.g. an internal case number or a PID). Also seeds this assessment's RDF resource URI -- see schema.py.",
-          "obligation": "mandatory",
+          "label": "Eine eindeutige, persistente Kennung dieser Zustandserfassung. Bestimmt auch die URI der zugehörigen RDF-Ressource -- siehe schema.py.",
+          "obligation": "Pflicht",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/R48T23"
         },
         {
           "local_name": "anlassDerZustandserfassung",
-          "label": "Why this assessment was carried out (e.g. initial accessioning, pre-treatment documentation, routine monitoring, loan preparation).",
-          "obligation": "conditional",
+          "label": "Der Grund, warum der Zustand zu diesem Zeitpunkt dokumentiert wurde, z. B. Ersterfassung, vor/nach einer Maßnahme, Monitoring.",
+          "obligation": "Pflicht",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/G5TA85"
         },
         {
           "local_name": "anlassDerZustandserfassung.erfassungszeitpunkt",
-          "label": "Where this assessment sits in the treatment timeline (e.g. before/during/after treatment, or independent monitoring).",
-          "obligation": "conditional",
+          "label": "Die zeitliche Relation zu einer Erhaltungsmaßnahme: Vorzustand, Zwischenzustand oder Endzustand. Verpflichtend, sobald Anlass = Erhaltungsmaßnahme.",
+          "obligation": "bedingte Pflicht",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/A8ABBA"
         },
         {
           "local_name": "erfassungsdatum",
-          "label": "The date the assessment was carried out. Use ISO 8601 (YYYY-MM-DD).",
-          "obligation": "mandatory",
+          "label": "Das Datum, an dem die Zustandserfassung durchgeführt wurde. ISO 8601 (JJJJ-MM-TT).",
+          "obligation": "Pflicht",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/CA1BC5"
         },
         {
           "local_name": "zustaendigePerson",
-          "label": "The person responsible for carrying out the assessment.",
-          "obligation": "mandatory",
+          "label": "Die für die Zustandserfassung verantwortliche Person.",
+          "obligation": "Pflicht",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/HRO94F"
         },
         {
           "local_name": "dokumentationsform",
-          "label": "The form this assessment's documentation takes (e.g. text report, structured data, photographs).",
-          "obligation": "conditional",
+          "label": "Die Art(en) der Dokumentation, mit denen der Zustand erfasst wurde, z. B. Fotografie, Schadenskartierung, Zeichnung.",
+          "obligation": "bedingte Pflicht",
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/CDD6B5"
         },
         {
           "local_name": "dokumentationsform.verweis",
-          "label": "A reference/link to the documentation named above, if it lives elsewhere.",
-          "obligation": "conditional",
+          "label": "Wo die unter „Dokumentationsform“ genannte Datei oder Ressource zu finden ist.",
+          "obligation": "bedingte Pflicht",
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/GDF23F"
         },
         {
-          "local_name": "zustandsbeschreibung",
-          "label": "A free-text description of the object's condition at the time of this assessment.",
-          "obligation": "mandatory",
-          "repeatable": false,
-          "term_uri": "https://www.w3id.org/conservation/terms/metadata/AC1786"
-        },
-        {
           "local_name": "zustandsbeschreibung.bisherigeUmgebungsbedingungen",
-          "label": "The environmental conditions the object was previously kept under, where relevant to its condition.",
-          "obligation": "recommended",
+          "label": "Aufbewahrungs- und Umgebungsbedingungen, denen das Objekt vor dieser Zustandserfassung ausgesetzt war.",
+          "obligation": "empfohlen",
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/G79CA9"
         },
         {
           "local_name": "zustandsbeschreibung.physischerObjektzustand",
-          "label": "The object's physical condition, summarised (dimensions, weight, completeness, stability).",
-          "obligation": "mandatory",
+          "label": "Die objektive Beschreibung der physischen Zustandsmerkmale, ohne Bewertung (Freitext, ergänzt durch die folgenden Unterelemente).",
+          "obligation": "Pflicht",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/BC5B57"
         },
         {
           "local_name": "zustandsbeschreibung.physischerObjektzustand.aktuelleMasse",
-          "label": "The object's current dimensions.",
-          "obligation": "conditional",
+          "label": "Die räumlichen Maße des Objekts zum Erfassungszeitpunkt (mindestens Höhe und Breite; Tiefe und Durchmesser je nach Objektgeometrie).",
+          "obligation": "bedingte Pflicht",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/DBC278"
         },
         {
           "local_name": "zustandsbeschreibung.physischerObjektzustand.aktuellesGewicht",
-          "label": "The object's current weight.",
+          "label": "Die Masse des Objekts zum Zeitpunkt der Begutachtung.",
           "obligation": "optional",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/C7C3B7"
         },
         {
           "local_name": "zustandsbeschreibung.physischerObjektzustand.vollstaendigkeit",
-          "label": "Whether the object is complete.",
-          "obligation": "recommended",
+          "label": "Ob das Objekt zum Erfassungszeitpunkt vollständig erhalten ist oder Teile fehlen.",
+          "obligation": "empfohlen",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/CA8K78"
         },
         {
           "local_name": "zustandsbeschreibung.physischerObjektzustand.stabilitaet",
-          "label": "The object's structural stability.",
-          "obligation": "recommended",
+          "label": "Ob das Objekt strukturell stabil ist oder mechanische Gefährdungen vorliegen.",
+          "obligation": "empfohlen",
           "repeatable": false,
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/GVB7T9"
         },
         {
           "local_name": "zustandsbeschreibung.schadensphaenomene",
-          "label": "Damage phenomena observed on the object.",
-          "obligation": "mandatory",
+          "label": "Am Objekt festgestellte, konservatorisch relevante Schäden (z. B. Risse, Farbverlust, Korrosion, Schimmelbefall).",
+          "obligation": "Pflicht",
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/AA6941"
         },
         {
           "local_name": "konservatorischeVorgeschichte",
-          "label": "Any known prior conservation/restoration history for the object.",
-          "obligation": "recommended",
+          "label": "Spuren früherer konservatorisch-restauratorischer Eingriffe, die bei der Zustandserfassung festgestellt wurden.",
+          "obligation": "empfohlen",
           "term_uri": "https://www.w3id.org/conservation/terms/metadata/A4G52F"
         }
       ]
