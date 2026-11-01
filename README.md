@@ -2,7 +2,7 @@
 
 `Arkivar` is a CLI tool for transparently ingesting and archiving files and directories.
 On ingesting a file, `Arkivar` validates its filetype and extracts its metadata.
-The extracted metadata is merged with the contents of `metadata.json` and written to a sidecar file in RDF/XML.
+The extracted metadata is merged with the contents of `metadata.json` and written to a sidecar file in Turtle (`.ttl`, default) or RDF/XML (`.rdf.xml`).
 Finally, all validated files and their sidecars are organised in a `BagIt` compliant file structure, sorted by creation date.
 Every step is automatically documented in `changelog.csv`.
 `Arkivar` can also archive a project in the `BagIt` format.
@@ -10,7 +10,7 @@ In that case, `changelog.csv` and `metadata.json` are included as tag-files.
 
 Although it is primarily intended to be used as a CLI application, _Arkivar_ can also be imported as a Python module.
 
-**NOTE**: Although functional, this tool is still under development, and many filetypes may still not parse correctly into RDF/XML.
+**NOTE**: Although functional, this tool is still under development, and many filetypes may still not parse correctly into RDF.
 
 ## Intended Workflow
 
@@ -21,6 +21,7 @@ If any of these already exists, they will not be overwritten.
 Any unedited fields will be excluded from the generated sidecar files.
 4. Run `arkivar ingest [path_to_data_source] [path_to_project]` on any file or directory.
 If you need to ingest data from several sources, do it one at a time.
+Use `-f`/`--sidecar-format` (`ttl` or `xml`) to choose the sidecar format; `requeue` accepts the same option.
 Any files that fail validation will be moved to the `quarantine/` directory.
 5. Once everything has been ingested, `arkivar requeue [path_to_project]` checks the `quarantine/` directory for any files that failed file validation.
 Files that now pass, e.g. because their file extensions have been manually changed, are passed through the remaining pipeline.

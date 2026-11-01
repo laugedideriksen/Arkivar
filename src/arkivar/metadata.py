@@ -12,6 +12,13 @@ from typing import Optional, Any, Callable
 from typing import Literal as typingLiteral
 from .utils import resolve_created_date
 
+# format -> (sidecar suffix, rdflib serializer, rdflib parser)
+SIDECAR_FORMATS: dict[str, tuple[str, str, str]] = {
+    "ttl": (".ttl", "turtle", "turtle"),
+    "xml": (".rdf.xml", "pretty-xml", "xml"),
+}
+DEFAULT_SIDECAR_FORMAT = "ttl"
+
 
 def metadata_template(
     schema_ids: list[str], registry: Optional[SchemaRegistry] = None
@@ -501,14 +508,18 @@ def write_sidecar(
     data_source: FileState,
     logger: LogWriter,
     sidecar: dict,
+    sidecar_format: str = DEFAULT_SIDECAR_FORMAT,
 ) -> FileState:
     g = build_sidecar_graph(data_source, sidecar)
 
+    sidecar_suffix, serializer, _ = SIDECAR_FORMATS[sidecar_format]
     data_source_path = data_source.current_path
-    sidecar_path = data_source_path.with_suffix(data_source_path.suffix + ".rdf.xml")
-    g.serialize(destination=str(sidecar_path), format="pretty-xml")
+    sidecar_path = data_source_path.with_suffix(
+        data_source_path.suffix + sidecar_suffix
+    )
+    g.serialize(destination=str(sidecar_path), format=serializer)
 
-    valid, msg = validate_sidecar(sidecar_path, expected_graph=g)
+    valid, msg = validate_sidecar(sidecar_path, g, sidecar_format)
     if not valid:
         return logger.change_state(
             data_source,
@@ -533,19 +544,24 @@ def write_sidecar(
     )
 
 
-def validate_sidecar(sidecar_path: Path, expected_graph: Graph) -> tuple[bool, str]:
+def validate_sidecar(
+    sidecar_path: Path,
+    expected_graph: Graph,
+    sidecar_format: str = DEFAULT_SIDECAR_FORMAT,
+) -> tuple[bool, str]:
+    _, _, parser = SIDECAR_FORMATS[sidecar_format]
     try:
         reparsed = Graph()
-        reparsed.parse(str(sidecar_path), format="xml")
+        reparsed.parse(str(sidecar_path), format=parser)
     except Exception as e:
-        return False, f"Invalid RDF/XML: {e}"
+        return False, f"Invalid {parser} sidecar: {e}"
 
     if set(reparsed) != set(expected_graph):
         missing = set(expected_graph) - set(reparsed)
         extra = set(reparsed) - set(expected_graph)
         return (
             False,
-            f"Mismatch between written and expected XML: missing: {missing}, unexpected: {extra}",
+            f"Mismatch between written and expected graph: missing: {missing}, unexpected: {extra}",
         )
 
-    return True, f"Valid XML: {len(reparsed)} triples"
+    return True, f"Valid {parser}: {len(reparsed)} triples"

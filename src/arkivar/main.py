@@ -3,12 +3,16 @@ from . import pipeline as arkivar
 from .log_writer import LogWriter
 from .data_objects import FileState, create_filestate, IngestReport
 from .init_dir import ensure_init
+from .metadata import DEFAULT_SIDECAR_FORMAT
 from pathlib import Path, PurePath
 from tqdm import tqdm
 
 
 def _ingest_file(
-    source: FileState | Path, project_path: Path, logger: LogWriter
+    source: FileState | Path,
+    project_path: Path,
+    logger: LogWriter,
+    sidecar_format: str = DEFAULT_SIDECAR_FORMAT,
 ) -> FileState:
     """Pass a single file through the ingestion pipeline"""
     if isinstance(source, PurePath):
@@ -29,7 +33,9 @@ def _ingest_file(
         data_source = arkivar.extract_metadata(data_source, logger)
 
     if data_source.status == "METADATA_EXTRACTED":
-        data_source = arkivar.create_sidecar_file(data_source, logger, project_path)
+        data_source = arkivar.create_sidecar_file(
+            data_source, logger, project_path, sidecar_format
+        )
 
     if data_source.status == "SIDECAR_CREATED":
         data_source = arkivar.organise(project_path, data_source, logger)
@@ -48,7 +54,10 @@ def _classify(data_source: FileState, report: IngestReport) -> None:
 
 
 def _ingest_directory(
-    source_path: str | Path, project_path: Path, logger: LogWriter
+    source_path: str | Path,
+    project_path: Path,
+    logger: LogWriter,
+    sidecar_format: str = DEFAULT_SIDECAR_FORMAT,
 ) -> IngestReport:
     """Pass the contents of a directory through the ingest pipeline."""
     ingestion_root = Path(source_path).resolve()
@@ -58,12 +67,18 @@ def _ingest_directory(
         if file_path.is_file():
             relative_path = file_path.relative_to(ingestion_root).parent
             data_source = create_filestate(file_path, relative_path)
-            data_source = _ingest_file(data_source, project_path, logger)
+            data_source = _ingest_file(
+                data_source, project_path, logger, sidecar_format
+            )
             _classify(data_source, report)
     return report
 
 
-def ingest(source_path: str | Path, project_path: str | Path) -> IngestReport:
+def ingest(
+    source_path: str | Path,
+    project_path: str | Path,
+    sidecar_format: str = DEFAULT_SIDECAR_FORMAT,
+) -> IngestReport:
     """Orchestrator function for ingesting files and directories."""
     source_path = Path(source_path).resolve()
     project_path = Path(project_path).resolve()
@@ -79,10 +94,10 @@ def ingest(source_path: str | Path, project_path: str | Path) -> IngestReport:
     arkivar.clean_project_metadata(project_path, logger)
 
     if os.path.isfile(source_path):
-        data_source = _ingest_file(source_path, project_path, logger)
+        data_source = _ingest_file(source_path, project_path, logger, sidecar_format)
         _classify(data_source, report)
     elif os.path.isdir(source_path):
-        report = _ingest_directory(source_path, project_path, logger)
+        report = _ingest_directory(source_path, project_path, logger, sidecar_format)
 
     arkivar.finalise(logger)
 
@@ -96,7 +111,9 @@ def ingest(source_path: str | Path, project_path: str | Path) -> IngestReport:
     return report
 
 
-def requeue_quarantine(project_path: Path | str) -> IngestReport:
+def requeue_quarantine(
+    project_path: Path | str, sidecar_format: str = DEFAULT_SIDECAR_FORMAT
+) -> IngestReport:
     """Re-attempt validation for every file in quarantine/, and run the rest of the pipeline for any that now pass. Files that still fail are left untouched."""
     project_path = Path(project_path).resolve()
 
@@ -120,7 +137,9 @@ def requeue_quarantine(project_path: Path | str) -> IngestReport:
 
         data_source = arkivar.extract_metadata(data_source, logger)
         if data_source.status == "METADATA_EXTRACTED":
-            data_source = arkivar.create_sidecar_file(data_source, logger, project_path)
+            data_source = arkivar.create_sidecar_file(
+                data_source, logger, project_path, sidecar_format
+            )
         if data_source.status == "SIDECAR_CREATED":
             data_source = arkivar.organise(project_path, data_source, logger)
 
