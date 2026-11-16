@@ -10,6 +10,7 @@ from .metadata import (
     exiftool_fields_for,
     build_sidecar,
     write_sidecar,
+    DEFAULT_SIDECAR_FORMAT,
     metadata_template,
 )
 import json
@@ -155,7 +156,10 @@ def clean_project_metadata(project_path: Path, logger: LogWriter) -> None:
 
 
 def create_sidecar_file(
-    data_source: FileState, logger: LogWriter, project_path: Path
+    data_source: FileState,
+    logger: LogWriter,
+    project_path: Path,
+    sidecar_format: str = DEFAULT_SIDECAR_FORMAT,
 ) -> FileState:
     suffix = data_source.current_path.suffix.lower()
     exif_data = data_source.metadata or {}
@@ -163,7 +167,7 @@ def create_sidecar_file(
     with open(metadata_file, "r") as f:
         project_metadata = json.load(f)
     sidecar_dict = build_sidecar(project_metadata, exif_data, suffix)
-    data_source = write_sidecar(data_source, logger, sidecar_dict)
+    data_source = write_sidecar(data_source, logger, sidecar_dict, sidecar_format)
     return data_source
 
 

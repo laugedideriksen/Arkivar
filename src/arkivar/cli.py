@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterator
 from .init_dir import init_dir
 from .main import ingest, bag_project, requeue_quarantine
+from .metadata import DEFAULT_SIDECAR_FORMAT, SIDECAR_FORMATS
 from .schema import SchemaRegistry
 
 try:  # optional: tab completion, see `pip install argcomplete`
@@ -172,7 +173,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
     try:
         with _stdout_reserved(args):
-            report = ingest(args.source_path, args.project_path)
+            report = ingest(args.source_path, args.project_path, args.sidecar_format)
     except Exception as e:
         return _fail(
             args, "ingest", args.project_path, f"ingestion failed: {e}", **extra
@@ -220,7 +221,7 @@ def cmd_requeue(args: argparse.Namespace) -> int:
 
     try:
         with _stdout_reserved(args):
-            report = requeue_quarantine(args.project_path)
+            report = requeue_quarantine(args.project_path, args.sidecar_format)
     except Exception as e:
         return _fail(args, "requeue", args.project_path, f"requeue failed: {e}")
 
@@ -272,7 +273,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="arkivar",
         description=(
-            "Arkivar: ingest, validate, and archive files with RDF/XML sidecars and BagIt packaging.\n\n"
+            "Arkivar: ingest, validate, and archive files with RDF sidecars and BagIt packaging.\n\n"
             "Typical workflow:\n"
             "  1. arkivar init PROJECT\n"
             "  2. Manually fill out PROJECT/metadata.json\n"
@@ -294,6 +295,18 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Write a single machine-readable JSON document to stdout (progress "
             "output goes to stderr). Exit codes are unchanged."
+        ),
+    )
+
+    sidecar_format = argparse.ArgumentParser(add_help=False)
+    sidecar_format.add_argument(
+        "-f",
+        "--sidecar-format",
+        choices=list(SIDECAR_FORMATS),
+        default=DEFAULT_SIDECAR_FORMAT,
+        help=(
+            "Sidecar serialization: 'ttl' (Turtle, .ttl) or 'xml' (RDF/XML, "
+            f".rdf.xml) (default: {DEFAULT_SIDECAR_FORMAT})."
         ),
     )
 
@@ -335,7 +348,7 @@ def build_parser() -> argparse.ArgumentParser:
     # --- ingest ---
     ingest_parser = subparsers.add_parser(
         "ingest",
-        parents=[common],
+        parents=[common, sidecar_format],
         help="Ingest a file or directory: stage, validate, extract metadata, build a sidecar, and organise.",
         description="Ingest a file or directory into an Arkivar project.",
     )
@@ -356,7 +369,7 @@ def build_parser() -> argparse.ArgumentParser:
     # --- requeue ---
     requeue_parser = subparsers.add_parser(
         "requeue",
-        parents=[common],
+        parents=[common, sidecar_format],
         help="Re-validate quarantined files (e.g. after renaming them) and pass any that now succeed through the rest of the pipeline.",
         description=(
             "Re-evaluate every file in quarantine/. Files that now pass validation "
